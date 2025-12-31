@@ -1,0 +1,244 @@
+{
+  "locations": [
+    {
+      "type": "location",
+      "timestamp": "2025-01-02T08:30:00Z",
+      "data": {
+        "lat": 39.7392,
+        "lng": -104.9903,
+        "place": "Home",
+        "address": "1234 Main St, Denver, CO 80202",
+        "duration_minutes": 480,
+        "accuracy": 25
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-02T09:15:00Z",
+      "data": {
+        "lat": 39.7456,
+        "lng": -104.9989,
+        "place": "Starbucks",
+        "address": "500 16th St, Denver, CO 80202",
+        "duration_minutes": 25,
+        "accuracy": 15
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-02T09:45:00Z",
+      "data": {
+        "lat": 39.7502,
+        "lng": -104.9998,
+        "place": "Office",
+        "address": "1801 California St, Denver, CO 80202",
+        "duration_minutes": 420,
+        "accuracy": 20
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-02T18:30:00Z",
+      "data": {
+        "lat": 39.7321,
+        "lng": -104.9876,
+        "place": "Whole Foods Market",
+        "address": "900 N Colorado Blvd, Denver, CO 80206",
+        "duration_minutes": 35,
+        "accuracy": 18
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-03T07:00:00Z",
+      "data": {
+        "lat": 39.7392,
+        "lng": -104.9903,
+        "place": "Home",
+        "address": "1234 Main St, Denver, CO 80202",
+        "duration_minutes": 120,
+        "accuracy": 25
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-03T10:00:00Z",
+      "data": {
+        "lat": 39.6833,
+        "lng": -104.9411,
+        "place": "Cherry Creek Shopping Center",
+        "address": "3000 E 1st Ave, Denver, CO 80206",
+        "duration_minutes": 180,
+        "accuracy": 30
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-04T12:30:00Z",
+      "data": {
+        "lat": 39.7554,
+        "lng": -104.9940,
+        "place": "Union Station",
+        "address": "1701 Wynkoop St, Denver, CO 80202",
+        "duration_minutes": 45,
+        "accuracy": 12
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-05T09:00:00Z",
+      "data": {
+        "lat": 39.7504,
+        "lng": -104.9988,
+        "place": "Denver Art Museum",
+        "address": "100 W 14th Ave Pkwy, Denver, CO 80204",
+        "duration_minutes": 150,
+        "accuracy": 22
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-06T08:00:00Z",
+      "data": {
+        "lat": 39.7392,
+        "lng": -104.9903,
+        "place": "Home",
+        "address": "1234 Main St, Denver, CO 80202",
+        "duration_minutes": 60,
+        "accuracy": 25
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-06T10:00:00Z",
+      "data": {
+        "lat": 39.6478,
+        "lng": -104.7878,
+        "place": "Parker Recreation Center",
+        "address": "17301 E Lincoln Ave, Parker, CO 80134",
+        "duration_minutes": 90,
+        "accuracy": 28
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-07T14:00:00Z",
+      "data": {
+        "lat": 39.7621,
+        "lng": -104.8816,
+        "place": "Stanley Marketplace",
+        "address": "2501 Dallas St, Aurora, CO 80010",
+        "duration_minutes": 120,
+        "accuracy": 20
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-08T09:30:00Z",
+      "data": {
+        "lat": 39.7502,
+        "lng": -104.9998,
+        "place": "Office",
+        "address": "1801 California St, Denver, CO 80202",
+        "duration_minutes": 480,
+        "accuracy": 20
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-09T19:00:00Z",
+      "data": {
+        "lat": 39.7481,
+        "lng": -104.9991,
+        "place": "Capital Grille",
+        "address": "1450 Larimer St, Denver, CO 80202",
+        "duration_minutes": 90,
+        "accuracy": 15
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-10T11:00:00Z",
+      "data": {
+        "lat": 39.7500,
+        "lng": -105.0000,
+        "place": "REI Denver",
+        "address": "1416 Platte St, Denver, CO 80202",
+        "duration_minutes": 45,
+        "accuracy": 18
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-11T08:00:00Z",
+      "data": {
+        "lat": 39.5883,
+        "lng": -105.6439,
+        "place": "Breckenridge Ski Resort",
+        "address": "1599 Ski Hill Rd, Breckenridge, CO 80424",
+        "duration_minutes": 360,
+        "accuracy": 50
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-12T10:00:00Z",
+      "data": {
+        "lat": 39.7392,
+        "lng": -104.9903,
+        "place": "Home",
+        "address": "1234 Main St, Denver, CO 80202",
+        "duration_minutes": 240,
+        "accuracy": 25
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-13T15:30:00Z",
+      "data": {
+        "lat": 39.7644,
+        "lng": -104.9856,
+        "place": "Denver Zoo",
+        "address": "2300 Steele St, Denver, CO 80205",
+        "duration_minutes": 180,
+        "accuracy": 35
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-14T09:00:00Z",
+      "data": {
+        "lat": 39.7502,
+        "lng": -104.9998,
+        "place": "Office",
+        "address": "1801 California St, Denver, CO 80202",
+        "duration_minutes": 540,
+        "accuracy": 20
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-15T12:00:00Z",
+      "data": {
+        "lat": 39.7531,
+        "lng": -104.9979,
+        "place": "Chipotle",
+        "address": "1644 Champa St, Denver, CO 80202",
+        "duration_minutes": 30,
+        "accuracy": 10
+      }
+    },
+    {
+      "type": "location",
+      "timestamp": "2025-01-15T18:00:00Z",
+      "data": {
+        "lat": 39.7427,
+        "lng": -104.9915,
+        "place": "Denver Central Library",
+        "address": "10 W 14th Ave Pkwy, Denver, CO 80204",
+        "duration_minutes": 90,
+        "accuracy": 22
+      }
+    }
+  ]
+}

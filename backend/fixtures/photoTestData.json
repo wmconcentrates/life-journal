@@ -1,0 +1,172 @@
+{
+  "photos": [
+    {
+      "filename": "IMG_1001.jpg",
+      "timestamp": "2025-01-08T08:30:00Z",
+      "location": "Denver, CO",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/1.8",
+        "iso": 100
+      },
+      "size_bytes": 2500000,
+      "description": "Morning coffee at home"
+    },
+    {
+      "filename": "IMG_1002.jpg",
+      "timestamp": "2025-01-08T12:15:00Z",
+      "location": "Denver, CO",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/2.8",
+        "iso": 200
+      },
+      "size_bytes": 2800000,
+      "description": "Lunch with colleagues"
+    },
+    {
+      "filename": "IMG_1003.jpg",
+      "timestamp": "2025-01-09T10:00:00Z",
+      "location": "Cherry Creek, Denver",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/1.8",
+        "iso": 64
+      },
+      "size_bytes": 3200000,
+      "description": "Shopping trip - found great sale"
+    },
+    {
+      "filename": "IMG_1004.jpg",
+      "timestamp": "2025-01-09T15:30:00Z",
+      "location": null,
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/1.8",
+        "iso": 125
+      },
+      "size_bytes": 2600000,
+      "description": "Kids playing in the snow"
+    },
+    {
+      "filename": "IMG_1005.jpg",
+      "timestamp": "2025-01-10T09:00:00Z",
+      "location": "Denver Art Museum",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/2.4",
+        "iso": 400
+      },
+      "size_bytes": 2400000,
+      "description": "Art museum exhibit"
+    },
+    {
+      "filename": "IMG_1006.jpg",
+      "timestamp": "2025-01-10T14:00:00Z",
+      "location": "Denver, CO",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/1.8",
+        "iso": 80
+      },
+      "size_bytes": 3100000,
+      "description": "Beautiful sunset from downtown"
+    },
+    {
+      "filename": "IMG_1007.jpg",
+      "timestamp": "2025-01-11T07:30:00Z",
+      "location": "Breckenridge, CO",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/2.8",
+        "iso": 50
+      },
+      "size_bytes": 3500000,
+      "description": "Mountain view - ski trip"
+    },
+    {
+      "filename": "IMG_1008.jpg",
+      "timestamp": "2025-01-11T11:00:00Z",
+      "location": "Breckenridge Ski Resort",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/2.2",
+        "iso": 64
+      },
+      "size_bytes": 3800000,
+      "description": "On the slopes"
+    },
+    {
+      "filename": "IMG_1009.jpg",
+      "timestamp": "2025-01-11T16:00:00Z",
+      "location": "Breckenridge, CO",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/1.8",
+        "iso": 200
+      },
+      "size_bytes": 2900000,
+      "description": "Hot chocolate after skiing"
+    },
+    {
+      "filename": "IMG_1010.jpg",
+      "timestamp": "2025-01-12T12:00:00Z",
+      "location": "Denver, CO",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/1.8",
+        "iso": 100
+      },
+      "size_bytes": 2700000,
+      "description": "Sunday brunch"
+    },
+    {
+      "filename": "IMG_1011.jpg",
+      "timestamp": "2025-01-13T10:30:00Z",
+      "location": "Denver Zoo",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/2.8",
+        "iso": 160
+      },
+      "size_bytes": 3000000,
+      "description": "Zoo visit with kids"
+    },
+    {
+      "filename": "IMG_1012.jpg",
+      "timestamp": "2025-01-14T18:30:00Z",
+      "location": "Denver, CO",
+      "exif": {
+        "width": 4032,
+        "height": 3024,
+        "camera": "iPhone 14 Pro",
+        "aperture": "f/1.8",
+        "iso": 320
+      },
+      "size_bytes": 2550000,
+      "description": "Family dinner"
+    }
+  ]
+}

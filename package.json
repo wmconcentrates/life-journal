@@ -1,0 +1,27 @@
+{
+  "name": "life-journal-setup",
+  "version": "1.0.0",
+  "description": "A comprehensive personal life tracking and journaling app. ## Quick Start ### 1. Setup \\\\\\powershell .\\setup.ps1 \\\\\\ ### 2. Configure Environment Edit \\.env\\ and add: - Supabase URL and API key - Claude API key - Google OAuth credentials (optional) ### 3. Start Backend \\\\\\powershell cd backend npm run dev \\\\\\ ### 4. Test Connection \\\\\\powershell curl http://localhost:3001/api/test \\\\\\ ## Architecture \\\\\\ iOS App    ??? Backend (Node/Express)    ??? Supabase (Database)    ??? Claude API (Intelligence)    ??? External APIs (Google Maps, Amazon, etc.) \\\\\\ ## Features (MVP) - ??? Timeline view (calendar + daily events) - ??? Google Maps integration (location history) - ??? Amazon integration (purchase history) - ??? OAuth authentication - ??? Encrypted credential storage - ??? Weekly sync orchestration - ??? Coach AI insights - ??? Test data fixtures ## Next Steps 1. Fill in .env with your API keys 2. Create Supabase project (supabase.com) 3. Run: npm run dev (in backend folder) 4. Test: curl http://localhost:3001/api/test 5. Open iOS project in Xcode 6. Deploy backend to Vercel ## Support Check QUICKSTART.md for detailed instructions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@supabase/supabase-js": "^2.89.0",
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
+  }
+}

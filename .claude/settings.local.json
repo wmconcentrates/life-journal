@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(node --test:*)",
+      "Bash(copy \"C:\\\\Users\\\\white\\\\life-journal-setup\\\\.env\" \"C:\\\\Users\\\\white\\\\life-journal-setup\\\\backend\\\\.env\")",
+      "Bash(timeout 10 node:*)",
+      "Bash(timeout 3 node:*)",
+      "Bash(ls:*)",
+      "Bash(node index.js:*)",
+      "Bash(curl:*)",
+      "Bash(npx vercel:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
