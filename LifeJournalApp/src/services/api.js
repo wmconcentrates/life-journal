@@ -1,10 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Use localhost for development, Vercel URL for production
-const BASE_URL = __DEV__
-  ? 'http://10.0.2.2:3001'  // Android emulator localhost
-  : 'https://backend-eta-flax-34.vercel.app';
+// Always use production URL for real device testing
+const BASE_URL = 'https://backend-eta-flax-34.vercel.app';
 
 // Alternative URLs for different environments
 export const API_URLS = {

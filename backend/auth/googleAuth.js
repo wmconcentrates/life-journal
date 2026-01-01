@@ -102,45 +102,22 @@ export const handleGoogleAuth = async (supabase, code, redirectUri) => {
     };
 };
 
-// For testing without real Google OAuth
+// For testing without real Google OAuth (works without database)
 export const handleMockAuth = async (supabase, email = 'test@example.com') => {
-    // Check if user exists
-    let { data: existingUser } = await supabase
-        .from('users')
-        .select('id, email')
-        .eq('email', email)
-        .single();
+    // Generate a deterministic mock user ID from email
+    const mockUserId = 'demo-' + Buffer.from(email).toString('base64').slice(0, 8);
 
-    let userId;
-
-    if (existingUser) {
-        userId = existingUser.id;
-    } else {
-        const { data: newUser, error } = await supabase
-            .from('users')
-            .insert({
-                email: email,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            })
-            .select('id')
-            .single();
-
-        if (error) throw error;
-        userId = newUser.id;
-    }
-
-    const jwtToken = generateToken(userId, email);
-    const refreshToken = generateRefreshToken(userId);
+    const jwtToken = generateToken(mockUserId, email);
+    const refreshToken = generateRefreshToken(mockUserId);
 
     return {
         success: true,
         token: jwtToken,
         refreshToken,
         user: {
-            id: userId,
+            id: mockUserId,
             email: email,
-            name: 'Test User',
+            name: 'Demo User',
             picture: null
         }
     };
