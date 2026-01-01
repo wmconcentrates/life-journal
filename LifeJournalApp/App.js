@@ -9,37 +9,73 @@ import TimelineScreen from './src/screens/TimelineScreen';
 import WeeklySummaryScreen from './src/screens/WeeklySummaryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
+// Void theme colors
+const VOID = {
+  deep: '#050508',
+  dark: '#0A0A0F',
+  surface: '#12121A',
+  elevated: '#1A1A24',
+  primary: '#6366F1',
+  secondary: '#8B5CF6',
+  accent: '#EC4899',
+  text: '#FFFFFF',
+  textMuted: 'rgba(255, 255, 255, 0.4)',
+  border: 'rgba(255, 255, 255, 0.08)',
+};
+
 const Tab = createBottomTabNavigator();
 
-// Animated Tab Icon with press feedback
+// Animated orb-style tab icon
 const TabIcon = ({ icon, focused, color }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.spring(scaleAnim, {
-      toValue: focused ? 1.15 : 1,
-      friction: 5,
-      tension: 100,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: focused ? 1.2 : 1,
+        friction: 6,
+        tension: 120,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glowAnim, {
+        toValue: focused ? 1 : 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, [focused]);
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <Text style={{ fontSize: 24, opacity: focused ? 1 : 0.5 }}>{icon}</Text>
-    </Animated.View>
+    <View style={styles.tabIconContainer}>
+      {/* Glow effect */}
+      <Animated.View
+        style={[
+          styles.tabGlow,
+          {
+            opacity: glowAnim,
+            backgroundColor: color,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      />
+      {/* Icon */}
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <Text style={[styles.tabIcon, { opacity: focused ? 1 : 0.5 }]}>{icon}</Text>
+      </Animated.View>
+    </View>
   );
 };
 
-// Custom Tab Bar Label
-const TabLabel = ({ label, focused }) => (
+const TabLabel = ({ label, focused, color }) => (
   <Text
-    style={{
-      fontSize: 11,
-      fontWeight: focused ? '600' : '400',
-      color: focused ? '#8B7355' : '#A9A9A9',
-      marginTop: 2,
-    }}
+    style={[
+      styles.tabLabel,
+      {
+        color: focused ? color : VOID.textMuted,
+        fontWeight: focused ? '600' : '400',
+      },
+    ]}
   >
     {label}
   </Text>
@@ -47,50 +83,50 @@ const TabLabel = ({ label, focused }) => (
 
 const App = () => {
   return (
-    <NavigationContainer>
-      <StatusBar style="dark" />
+    <NavigationContainer
+      theme={{
+        dark: true,
+        colors: {
+          primary: VOID.primary,
+          background: VOID.deep,
+          card: VOID.surface,
+          text: VOID.text,
+          border: VOID.border,
+          notification: VOID.accent,
+        },
+      }}
+    >
+      <StatusBar style="light" />
       <Tab.Navigator
         initialRouteName="Coach"
         screenOptions={{
           tabBarStyle: {
-            backgroundColor: '#FFFCF8',
-            borderTopColor: '#F0E6D8',
+            backgroundColor: VOID.surface,
+            borderTopColor: VOID.border,
             borderTopWidth: 1,
-            paddingTop: 10,
-            paddingBottom: 10,
-            height: 70,
-            shadowColor: '#8B7355',
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.05,
-            shadowRadius: 8,
-            elevation: 8,
+            paddingTop: 12,
+            paddingBottom: 12,
+            height: 75,
+            shadowColor: VOID.primary,
+            shadowOffset: { width: 0, height: -8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 24,
+            elevation: 20,
           },
-          tabBarActiveTintColor: '#8B7355',
-          tabBarInactiveTintColor: '#C4B8A8',
-          headerStyle: {
-            backgroundColor: '#FAF8F5',
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 0,
-          },
-          headerTitleStyle: {
-            fontWeight: '600',
-            fontSize: 18,
-            color: '#3D3229',
-          },
-          headerTintColor: '#3D3229',
+          tabBarActiveTintColor: VOID.primary,
+          tabBarInactiveTintColor: VOID.textMuted,
+          headerShown: false,
         }}
       >
         <Tab.Screen
           name="Coach"
           component={CoachScreen}
           options={{
-            headerShown: false,
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon icon="🧘" focused={focused} color={color} />
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="🧘" focused={focused} color={VOID.primary} />
             ),
             tabBarLabel: ({ focused }) => (
-              <TabLabel label="Coach" focused={focused} />
+              <TabLabel label="Coach" focused={focused} color={VOID.primary} />
             ),
           }}
         />
@@ -98,12 +134,11 @@ const App = () => {
           name="Timeline"
           component={TimelineScreen}
           options={{
-            headerTitle: 'Your Journey',
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon icon="📅" focused={focused} color={color} />
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="📅" focused={focused} color={VOID.secondary} />
             ),
             tabBarLabel: ({ focused }) => (
-              <TabLabel label="Timeline" focused={focused} />
+              <TabLabel label="Timeline" focused={focused} color={VOID.secondary} />
             ),
           }}
         />
@@ -111,12 +146,11 @@ const App = () => {
           name="Summary"
           component={WeeklySummaryScreen}
           options={{
-            headerTitle: 'Weekly Reflection',
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon icon="📊" focused={focused} color={color} />
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="📊" focused={focused} color={VOID.accent} />
             ),
             tabBarLabel: ({ focused }) => (
-              <TabLabel label="Summary" focused={focused} />
+              <TabLabel label="Summary" focused={focused} color={VOID.accent} />
             ),
           }}
         />
@@ -124,12 +158,11 @@ const App = () => {
           name="Settings"
           component={SettingsScreen}
           options={{
-            headerTitle: 'Settings',
-            tabBarIcon: ({ focused, color }) => (
-              <TabIcon icon="⚙️" focused={focused} color={color} />
+            tabBarIcon: ({ focused }) => (
+              <TabIcon icon="⚙️" focused={focused} color="#06B6D4" />
             ),
             tabBarLabel: ({ focused }) => (
-              <TabLabel label="Settings" focused={focused} />
+              <TabLabel label="Settings" focused={focused} color="#06B6D4" />
             ),
           }}
         />
@@ -139,11 +172,26 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  tabIconContainer: {
     alignItems: 'center',
-    backgroundColor: '#FAF8F5',
+    justifyContent: 'center',
+    width: 50,
+    height: 30,
+  },
+  tabGlow: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    opacity: 0.3,
+  },
+  tabIcon: {
+    fontSize: 24,
+  },
+  tabLabel: {
+    fontSize: 11,
+    marginTop: 4,
+    letterSpacing: 0.3,
   },
 });
 

@@ -6,19 +6,23 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
   Animated,
+  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { VOID } from '../theme/colors';
+import Orb from '../components/Orb';
 import { insightsAPI } from '../services/api';
+
+const { width } = Dimensions.get('window');
 
 const WeeklySummaryScreen = () => {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [insightExpanded, setInsightExpanded] = useState(false);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const cardAnims = useRef([
+  const fadeIn = useRef(new Animated.Value(0)).current;
+  const orbAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
@@ -41,16 +45,17 @@ const WeeklySummaryScreen = () => {
   }, []);
 
   const startAnimations = () => {
-    Animated.timing(fadeAnim, {
+    Animated.timing(fadeIn, {
       toValue: 1,
-      duration: 500,
+      duration: 600,
       useNativeDriver: true,
     }).start();
 
-    cardAnims.forEach((anim, i) => {
-      Animated.timing(anim, {
+    orbAnims.forEach((anim, i) => {
+      Animated.spring(anim, {
         toValue: 1,
-        duration: 400,
+        friction: 8,
+        tension: 40,
         delay: 200 + i * 100,
         useNativeDriver: true,
       }).start();
@@ -88,364 +93,335 @@ const WeeklySummaryScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8B7355" />
-        <Text style={styles.loadingText}>Gathering your week...</Text>
+        <LinearGradient
+          colors={[VOID.deep, VOID.dark]}
+          style={StyleSheet.absoluteFill}
+        />
+        <Orb size={80} color={VOID.orb.secondary} pulse>
+          <ActivityIndicator color={VOID.text.primary} />
+        </Orb>
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="#8B7355"
-          colors={['#8B7355']}
-        />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Week Header */}
-      <Animated.View style={[styles.weekHeader, { opacity: fadeAnim }]}>
-        <Text style={styles.weekNumber}>Week {getWeekNumber()}</Text>
-        <Text style={styles.dateRange}>{getDateRange()}</Text>
-      </Animated.View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[VOID.deep, VOID.dark, '#0F0F18']}
+        style={StyleSheet.absoluteFill}
+      />
 
-      {/* Stats Grid */}
-      <Animated.View
-        style={[
-          styles.statsGrid,
-          {
-            opacity: cardAnims[0],
-            transform: [
-              {
-                translateY: cardAnims[0].interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [15, 0],
-                }),
-              },
-            ],
-          },
-        ]}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={VOID.orb.secondary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>📍</Text>
-          <Text style={styles.statValue}>
-            {insights?.stats?.locations?.uniquePlaces || 0}
-          </Text>
-          <Text style={styles.statLabel}>Places</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>🛍️</Text>
-          <Text style={styles.statValue}>
-            {insights?.stats?.spending?.totalOrders || 0}
-          </Text>
-          <Text style={styles.statLabel}>Purchases</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>💰</Text>
-          <Text style={styles.statValue}>
-            ${insights?.stats?.spending?.totalSpent?.toFixed(0) || 0}
-          </Text>
-          <Text style={styles.statLabel}>Spent</Text>
-        </View>
-
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>📷</Text>
-          <Text style={styles.statValue}>12</Text>
-          <Text style={styles.statLabel}>Moments</Text>
-        </View>
-      </Animated.View>
-
-      {/* Summary */}
-      {insights?.summary && (
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              opacity: cardAnims[1],
-              transform: [
-                {
-                  translateY: cardAnims[1].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [15, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>📖</Text>
-            <Text style={styles.cardTitle}>Your Week</Text>
-          </View>
-          <Text style={styles.summaryText}>{insights.summary}</Text>
+        {/* Week Header */}
+        <Animated.View style={[styles.weekHeader, { opacity: fadeIn }]}>
+          <Text style={styles.weekNumber}>Week {getWeekNumber()}</Text>
+          <Text style={styles.dateRange}>{getDateRange()}</Text>
         </Animated.View>
-      )}
 
-      {/* Coach Insight */}
-      {insights?.coachInsight && (
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => setInsightExpanded(!insightExpanded)}
-        >
+        {/* Stats Orbs */}
+        <View style={styles.statsGrid}>
           <Animated.View
             style={[
-              styles.card,
-              styles.insightCard,
+              styles.statItem,
               {
-                opacity: cardAnims[2],
+                opacity: orbAnims[0],
                 transform: [
                   {
-                    translateY: cardAnims[2].interpolate({
+                    scale: orbAnims[0].interpolate({
                       inputRange: [0, 1],
-                      outputRange: [15, 0],
+                      outputRange: [0.5, 1],
                     }),
                   },
                 ],
               },
             ]}
           >
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardIcon}>💭</Text>
-              <Text style={[styles.cardTitle, styles.insightTitle]}>Coach Says...</Text>
-              <Text style={styles.expandIcon}>{insightExpanded ? '▲' : '▼'}</Text>
-            </View>
-            <Text
-              style={styles.insightText}
-              numberOfLines={insightExpanded ? undefined : 4}
-            >
-              {insights.coachInsight}
-            </Text>
+            <Orb size={85} color={VOID.orb.cool} intensity={0.7}>
+              <Text style={styles.statValue}>
+                {insights?.stats?.locations?.uniquePlaces || 0}
+              </Text>
+            </Orb>
+            <Text style={styles.statLabel}>Places</Text>
           </Animated.View>
-        </TouchableOpacity>
-      )}
 
-      {/* Spending Breakdown */}
-      {insights?.stats?.spending?.categoryBreakdown && (
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              opacity: cardAnims[3],
-              transform: [
-                {
-                  translateY: cardAnims[3].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [15, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>📊</Text>
-            <Text style={styles.cardTitle}>Where It Went</Text>
-          </View>
-          {Object.entries(insights.stats.spending.categoryBreakdown)
-            .sort((a, b) => b[1].amount - a[1].amount)
-            .slice(0, 5)
-            .map(([category, data]) => (
-              <View key={category} style={styles.categoryRow}>
-                <Text style={styles.categoryName}>{category}</Text>
-                <Text style={styles.categoryAmount}>${data.amount.toFixed(2)}</Text>
-              </View>
-            ))}
-        </Animated.View>
-      )}
+          <Animated.View
+            style={[
+              styles.statItem,
+              {
+                opacity: orbAnims[1],
+                transform: [
+                  {
+                    scale: orbAnims[1].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.5, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Orb size={85} color={VOID.orb.warm} intensity={0.7}>
+              <Text style={styles.statValue}>
+                ${insights?.stats?.spending?.totalSpent?.toFixed(0) || 0}
+              </Text>
+            </Orb>
+            <Text style={styles.statLabel}>Spent</Text>
+          </Animated.View>
 
-      {/* Places Visited */}
-      {insights?.stats?.locations?.placesVisited && (
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              opacity: cardAnims[3],
-              transform: [
-                {
-                  translateY: cardAnims[3].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [15, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>🗺️</Text>
-            <Text style={styles.cardTitle}>Places You've Been</Text>
-          </View>
-          <View style={styles.placesContainer}>
-            {insights.stats.locations.placesVisited.slice(0, 8).map((place, i) => (
-              <View key={i} style={styles.placeTag}>
-                <Text style={styles.placeText}>{place}</Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-      )}
+          <Animated.View
+            style={[
+              styles.statItem,
+              {
+                opacity: orbAnims[2],
+                transform: [
+                  {
+                    scale: orbAnims[2].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.5, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Orb size={85} color={VOID.orb.accent} intensity={0.7}>
+              <Text style={styles.statValue}>12</Text>
+            </Orb>
+            <Text style={styles.statLabel}>Photos</Text>
+          </Animated.View>
 
-      <View style={styles.bottomPadding} />
-    </ScrollView>
+          <Animated.View
+            style={[
+              styles.statItem,
+              {
+                opacity: orbAnims[3],
+                transform: [
+                  {
+                    scale: orbAnims[3].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.5, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Orb size={85} color={VOID.orb.success} intensity={0.7}>
+              <Text style={styles.statValue}>
+                {insights?.stats?.spending?.totalOrders || 0}
+              </Text>
+            </Orb>
+            <Text style={styles.statLabel}>Orders</Text>
+          </Animated.View>
+        </View>
+
+        {/* Summary Card */}
+        {insights?.summary && (
+          <Animated.View style={[styles.card, { opacity: fadeIn }]}>
+            <View style={styles.cardGlow} />
+            <Text style={styles.cardLabel}>YOUR WEEK</Text>
+            <Text style={styles.cardText}>{insights.summary}</Text>
+          </Animated.View>
+        )}
+
+        {/* Coach Insight */}
+        {insights?.coachInsight && (
+          <Animated.View
+            style={[styles.card, styles.insightCard, { opacity: fadeIn }]}
+          >
+            <View style={[styles.cardGlow, { backgroundColor: VOID.glow.secondary }]} />
+            <View style={styles.insightHeader}>
+              <Orb size={40} color={VOID.orb.secondary} intensity={0.5}>
+                <Text style={{ fontSize: 18 }}>🧘</Text>
+              </Orb>
+              <Text style={styles.insightLabel}>COACH SAYS</Text>
+            </View>
+            <Text style={styles.insightText}>"{insights.coachInsight}"</Text>
+          </Animated.View>
+        )}
+
+        {/* Categories */}
+        {insights?.stats?.spending?.categoryBreakdown && (
+          <Animated.View style={[styles.card, { opacity: fadeIn }]}>
+            <Text style={styles.cardLabel}>WHERE IT WENT</Text>
+            {Object.entries(insights.stats.spending.categoryBreakdown)
+              .sort((a, b) => b[1].amount - a[1].amount)
+              .slice(0, 5)
+              .map(([category, data], i) => (
+                <View key={category} style={styles.categoryRow}>
+                  <View style={styles.categoryBar}>
+                    <View
+                      style={[
+                        styles.categoryFill,
+                        {
+                          width: `${(data.amount / insights.stats.spending.totalSpent) * 100}%`,
+                          backgroundColor: [
+                            VOID.orb.primary,
+                            VOID.orb.secondary,
+                            VOID.orb.accent,
+                            VOID.orb.cool,
+                            VOID.orb.warm,
+                          ][i],
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.categoryName}>{category}</Text>
+                  <Text style={styles.categoryAmount}>${data.amount.toFixed(0)}</Text>
+                </View>
+              ))}
+          </Animated.View>
+        )}
+
+        <View style={styles.bottomSpace} />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF8F5',
-  },
-  content: {
-    paddingBottom: 40,
+    backgroundColor: VOID.deep,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAF8F5',
   },
-  loadingText: {
-    marginTop: 16,
-    color: '#8B7355',
-    fontSize: 16,
-    fontWeight: '500',
+  content: {
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   weekHeader: {
     alignItems: 'center',
-    paddingVertical: 28,
-    backgroundColor: '#FFFCF8',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0E6D8',
+    marginBottom: 40,
   },
   weekNumber: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#3D3229',
-    letterSpacing: -0.5,
+    color: VOID.text.primary,
+    letterSpacing: -1,
   },
   dateRange: {
     fontSize: 15,
-    color: '#8B7355',
-    marginTop: 6,
-    fontWeight: '500',
+    color: VOID.text.muted,
+    marginTop: 8,
+    letterSpacing: 1,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 16,
-    backgroundColor: '#FFFCF8',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 32,
   },
-  statCard: {
+  statItem: {
     width: '50%',
-    padding: 16,
     alignItems: 'center',
-  },
-  statIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    marginBottom: 28,
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#3D3229',
+    color: VOID.text.primary,
   },
   statLabel: {
     fontSize: 13,
-    color: '#8B7355',
-    marginTop: 4,
+    color: VOID.text.secondary,
+    marginTop: 14,
     fontWeight: '500',
+    letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 22,
-    margin: 16,
-    marginBottom: 0,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 24,
+    backgroundColor: VOID.elevated,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#F0E6D8',
-    shadowColor: '#8B7355',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
+    borderColor: VOID.border.subtle,
+    overflow: 'hidden',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
+  cardGlow: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: VOID.glow.primary,
+    opacity: 0.2,
   },
-  cardIcon: {
-    fontSize: 22,
-    marginRight: 10,
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: VOID.text.muted,
+    letterSpacing: 2,
+    marginBottom: 16,
   },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#3D3229',
-    flex: 1,
-    letterSpacing: 0.3,
-  },
-  summaryText: {
-    fontSize: 15,
-    color: '#6B5B4F',
-    lineHeight: 24,
-  },
-  insightCard: {
-    backgroundColor: '#FFF9F0',
-    borderColor: '#F0E6D8',
-  },
-  insightTitle: {
-    color: '#D4A574',
-  },
-  expandIcon: {
-    fontSize: 12,
-    color: '#C4A98A',
-  },
-  insightText: {
+  cardText: {
     fontSize: 16,
-    color: '#5C4D3C',
+    color: VOID.text.secondary,
     lineHeight: 26,
   },
-  categoryRow: {
+  insightCard: {
+    backgroundColor: VOID.surface,
+  },
+  insightHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F0E8',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  insightLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: VOID.orb.secondary,
+    letterSpacing: 2,
+  },
+  insightText: {
+    fontSize: 17,
+    color: VOID.text.secondary,
+    lineHeight: 28,
+    fontStyle: 'italic',
+  },
+  categoryRow: {
+    marginBottom: 16,
+  },
+  categoryBar: {
+    height: 6,
+    backgroundColor: VOID.border.subtle,
+    borderRadius: 3,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  categoryFill: {
+    height: '100%',
+    borderRadius: 3,
   },
   categoryName: {
-    fontSize: 15,
-    color: '#3D3229',
+    fontSize: 14,
+    color: VOID.text.secondary,
   },
   categoryAmount: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#8B7355',
-  },
-  placesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  placeTag: {
-    backgroundColor: '#F5F0E8',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  placeText: {
+    position: 'absolute',
+    right: 0,
     fontSize: 14,
-    color: '#6B5B4F',
-    fontWeight: '500',
+    color: VOID.text.primary,
+    fontWeight: '600',
   },
-  bottomPadding: {
+  bottomSpace: {
     height: 40,
   },
 });
