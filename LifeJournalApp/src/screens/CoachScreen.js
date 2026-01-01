@@ -26,7 +26,6 @@ const CoachScreen = () => {
   const [insights, setInsights] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState("Hey there, friend.\nGood to see you.");
-  const [encouragement, setEncouragement] = useState("You're doing better than you think. Trust me on that one.");
   const [loadingCoach, setLoadingCoach] = useState(true);
 
   // Floating orb animations
@@ -46,21 +45,13 @@ const CoachScreen = () => {
       setLoadingCoach(true);
       const timeOfDay = getTimeOfDay();
 
-      // Fetch greeting and encouragement in parallel
-      const [greetingResult, encouragementResult] = await Promise.all([
-        coachAPI.getGreeting(timeOfDay),
-        coachAPI.getEncouragement()
-      ]);
-
+      const greetingResult = await coachAPI.getGreeting(timeOfDay);
       if (greetingResult.success && greetingResult.greeting) {
         setGreeting(greetingResult.greeting);
       }
-      if (encouragementResult.success && encouragementResult.encouragement) {
-        setEncouragement(encouragementResult.encouragement);
-      }
     } catch (error) {
       console.error('Coach messages error:', error);
-      // Keep fallback messages on error
+      // Keep fallback greeting on error
     } finally {
       setLoadingCoach(false);
     }
@@ -205,7 +196,6 @@ const CoachScreen = () => {
           </Orb>
 
           <Text style={styles.greeting}>{greeting}</Text>
-          <Text style={styles.encouragement}>"{encouragement}"</Text>
         </Animated.View>
 
         {/* Stats Orbs */}
@@ -288,15 +278,6 @@ const styles = StyleSheet.create({
     marginTop: 32,
     lineHeight: 38,
     letterSpacing: -0.5,
-  },
-  encouragement: {
-    fontSize: 16,
-    color: VOID.text.secondary,
-    textAlign: 'center',
-    marginTop: 20,
-    lineHeight: 26,
-    fontStyle: 'italic',
-    paddingHorizontal: 20,
   },
   statsSection: {
     paddingHorizontal: 24,
