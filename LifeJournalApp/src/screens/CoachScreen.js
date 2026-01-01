@@ -11,24 +11,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { VOID } from '../theme/colors';
 import Orb from '../components/Orb';
-import { insightsAPI } from '../services/api';
+import { insightsAPI, coachAPI } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
-
-const COACH_PHRASES = {
-  encouragement: [
-    "Alright alright alright... you're doing beautiful work here.",
-    "That's the thing about life, man. You just gotta keep on keepin' on.",
-    "Hey, you showed up today. That's half the battle right there, brother.",
-    "The Dude abides, and so do you. Keep that energy.",
-    "You're doing better than you think. Trust me on that one.",
-  ],
-  weekly: [
-    "You crushed it this week. Take a breath, you earned it.",
-    "Look at you, making moves. That's beautiful, man.",
-    "Another week in the books. And you know what? You handled it.",
-  ],
-};
 
 const getTimeOfDay = () => {
   const hour = new Date().getHours();
@@ -37,27 +22,12 @@ const getTimeOfDay = () => {
   return 'evening';
 };
 
-const getGreeting = () => {
-  const timeOfDay = getTimeOfDay();
-  switch (timeOfDay) {
-    case 'morning':
-      return "Rise and shine, buddy.\nLet's make today count.";
-    case 'afternoon':
-      return "Afternoon, my friend.\nYou're doing better than you think.";
-    case 'evening':
-      return "Evening, brother.\nReflect on the good stuff today.";
-    default:
-      return "Hey there, friend.\nGood to see you.";
-  }
-};
-
 const CoachScreen = () => {
   const [insights, setInsights] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [greeting] = useState(getGreeting());
-  const [encouragement] = useState(
-    COACH_PHRASES.encouragement[Math.floor(Math.random() * COACH_PHRASES.encouragement.length)]
-  );
+  const [greeting, setGreeting] = useState("Hey there, friend.\nGood to see you.");
+  const [encouragement, setEncouragement] = useState("You're doing better than you think. Trust me on that one.");
+  const [loadingCoach, setLoadingCoach] = useState(true);
 
   // Floating orb animations
   const float1 = useRef(new Animated.Value(0)).current;
@@ -67,8 +37,34 @@ const CoachScreen = () => {
 
   useEffect(() => {
     loadInsights();
+    loadCoachMessages();
     startAnimations();
   }, []);
+
+  const loadCoachMessages = async () => {
+    try {
+      setLoadingCoach(true);
+      const timeOfDay = getTimeOfDay();
+
+      // Fetch greeting and encouragement in parallel
+      const [greetingResult, encouragementResult] = await Promise.all([
+        coachAPI.getGreeting(timeOfDay),
+        coachAPI.getEncouragement()
+      ]);
+
+      if (greetingResult.success && greetingResult.greeting) {
+        setGreeting(greetingResult.greeting);
+      }
+      if (encouragementResult.success && encouragementResult.encouragement) {
+        setEncouragement(encouragementResult.encouragement);
+      }
+    } catch (error) {
+      console.error('Coach messages error:', error);
+      // Keep fallback messages on error
+    } finally {
+      setLoadingCoach(false);
+    }
+  };
 
   const startAnimations = () => {
     // Fade in
@@ -109,14 +105,13 @@ const CoachScreen = () => {
       }
     } catch (error) {
       console.error('Load insights error:', error);
-    } finally {
-      setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    loadInsights();
+    await Promise.all([loadInsights(), loadCoachMessages()]);
+    setRefreshing(false);
   };
 
   return (

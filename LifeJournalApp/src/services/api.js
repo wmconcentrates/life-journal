@@ -83,6 +83,29 @@ export const insightsAPI = {
   },
 };
 
+// Coach API - AI-generated messages with Dude vibes
+export const coachAPI = {
+  getGreeting: async (timeOfDay = 'afternoon') => {
+    const response = await api.get(`/api/coach/greeting?timeOfDay=${timeOfDay}`);
+    return response.data;
+  },
+
+  getDaySummary: async (dayData) => {
+    const response = await api.post('/api/coach/day-summary', { dayData });
+    return response.data;
+  },
+
+  getEncouragement: async (context = {}) => {
+    const response = await api.get(`/api/coach/encouragement?context=${encodeURIComponent(JSON.stringify(context))}`);
+    return response.data;
+  },
+
+  getInsight: async (currentWeekSummary, historicalSummaries = []) => {
+    const response = await api.post('/api/coach/insight', { currentWeekSummary, historicalSummaries });
+    return response.data;
+  },
+};
+
 // Health API
 export const healthAPI = {
   check: async () => {

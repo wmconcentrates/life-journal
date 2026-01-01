@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { VOID } from '../theme/colors';
 import Orb from '../components/Orb';
-import { insightsAPI } from '../services/api';
+import { insightsAPI, coachAPI } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +33,16 @@ const WeeklySummaryScreen = () => {
     try {
       const response = await insightsAPI.getTestInsights();
       if (response.success) {
+        // Fetch a fresh AI-generated coach insight
+        try {
+          const coachResult = await coachAPI.getInsight(response.summary);
+          if (coachResult.success && coachResult.insight) {
+            response.coachInsight = coachResult.insight;
+          }
+        } catch (coachError) {
+          console.error('Coach insight error:', coachError);
+          // Keep existing insight or fallback
+        }
         setInsights(response);
       }
     } catch (error) {

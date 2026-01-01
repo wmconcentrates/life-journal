@@ -13,7 +13,7 @@ import { googleMapsAgent, getLocationStats } from './agents/googleMapsAgent.js';
 import { amazonAgent, getSpendingStats } from './agents/amazonAgent.js';
 import { syncUserData, syncUserDataLocal, getWeekDateRange } from './sync/weeklySync.js';
 import { generateWeeklySummary, getWeekNumber } from './agents/summaryAgent.js';
-import { generateCoachInsight, generateReflectionPrompts } from './agents/coachAgent.js';
+import { generateCoachInsight, generateReflectionPrompts, generateGreeting, generateDaySummary, generateEncouragement } from './agents/coachAgent.js';
 import { encryptData, decryptData } from './utils/encryption.js';
 
 dotenv.config();
@@ -376,6 +376,66 @@ app.get('/api/insights/test', async (req, res) => {
                 spending: getSpendingStats(amazonResult.events || [])
             }
         });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// COACH ENDPOINTS
+// ============================================
+
+// Get AI-generated greeting
+app.get('/api/coach/greeting', async (req, res) => {
+    try {
+        const { timeOfDay } = req.query;
+        const result = await generateGreeting(timeOfDay || 'afternoon');
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get AI-generated day summary
+app.post('/api/coach/day-summary', async (req, res) => {
+    try {
+        const { dayData } = req.body;
+        const result = await generateDaySummary(dayData);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get AI-generated encouragement
+app.get('/api/coach/encouragement', async (req, res) => {
+    try {
+        const context = req.query.context ? JSON.parse(req.query.context) : {};
+        const result = await generateEncouragement(context);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get AI-generated coach insight
+app.post('/api/coach/insight', async (req, res) => {
+    try {
+        const { currentWeekSummary, historicalSummaries } = req.body;
+        const result = await generateCoachInsight(currentWeekSummary, historicalSummaries || []);
+        res.json(result);
     } catch (error) {
         res.status(500).json({
             success: false,

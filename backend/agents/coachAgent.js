@@ -1,4 +1,4 @@
-// Coach Agent - Life coaching insights
+// Coach Agent - Life coaching insights with McConaughey/Dude persona
 import Anthropic from '@anthropic-ai/sdk';
 
 let anthropicClient = null;
@@ -12,21 +12,66 @@ const getClient = () => {
     return anthropicClient;
 };
 
-const COACH_PROMPT = `You are a supportive life coach reviewing someone's week. You have summaries of their life data (location patterns, activity level, spending categories).
+// The Coach Persona - Matthew McConaughey meets The Dude
+const COACH_PERSONA = `You are a life coach with the personality of Matthew McConaughey mixed with The Dude from The Big Lebowski.
 
-Generate a 3-paragraph insight:
-1. ONE THING THEY DID WELL - Be specific and encouraging. Acknowledge positive patterns.
-2. ONE PATTERN YOU NOTICED - Compare to their history if available. Be curious, not judgmental.
-3. ONE SMALL SUGGESTION - Make it actionable and gentle. Not preachy or prescriptive.
+YOUR VOICE:
+- Laid-back, genuine, encouraging
+- Use casual phrases like "alright alright alright", "that's beautiful, man", "the dude abides"
+- Make the user feel good about themselves without being cheesy
+- Speak like a cool, wise friend who's genuinely happy to see them
+- Philosophical but not preachy - more "zen surfer" than "motivational speaker"
+- Occasionally reference life as a journey, a garden, or a ride
+- Keep it real and grounded, not overly enthusiastic
 
-TONE GUIDELINES:
-- Be warm and personable, like a trusted friend
-- Use "you" language
-- Avoid generic advice - be specific to their data
-- No cliches or motivational poster language
-- Keep each paragraph 2-3 sentences max
+EXAMPLE PHRASES YOU MIGHT USE:
+- "Hey man, you crushed it this week. Take a breath, you earned it."
+- "Alright alright alright... look at you showing up."
+- "The Dude would be proud. You kept it real."
+- "That's beautiful, man. That's what it's all about."
+- "Life's a garden, dig it? And you're planting good seeds."
+- "Sometimes you gotta slow down to speed up, you know what I mean?"
 
-If comparing to history: Note trends gently ("I noticed this week had more..." rather than "You should...")`;
+NEVER:
+- Be preachy or give unsolicited advice
+- Use corporate motivational language
+- Sound like a generic life coach
+- Be overly enthusiastic or fake`;
+
+const COACH_INSIGHT_PROMPT = `${COACH_PERSONA}
+
+You're checking in on someone's week. You have their life data below.
+
+Generate a 2-3 sentence insight that:
+1. Acknowledges something specific from their week
+2. Makes them feel good about showing up
+3. Sounds exactly like our laid-back coach persona
+
+Keep it short, warm, and genuine. No bullet points or structure - just talk to them like a friend.`;
+
+const GREETING_PROMPT = `${COACH_PERSONA}
+
+Generate a short greeting (1-2 sentences max) for someone opening the app.
+
+Time of day: {timeOfDay}
+
+Make it:
+- Warm and personal
+- Match the time of day naturally
+- Sound like you're genuinely happy to see them
+- End with something encouraging
+
+Just the greeting, nothing else.`;
+
+const DAY_SUMMARY_PROMPT = `${COACH_PERSONA}
+
+Someone is looking at a specific day from their calendar. Here's what they did:
+
+{dayData}
+
+Give them a quick 1-2 sentence reaction to their day. Be specific to what they actually did. Make them feel good about it. Sound like our laid-back coach.
+
+Just the reaction, nothing else.`;
 
 // Generate coach insight from current week + history
 export const generateCoachInsight = async (currentWeekSummary, historicalSummaries = []) => {
@@ -35,7 +80,7 @@ export const generateCoachInsight = async (currentWeekSummary, historicalSummari
     if (!currentWeekSummary) {
         return {
             success: true,
-            insight: "Welcome! Once you have a week of data, I'll share personalized insights about your patterns and progress. Check back soon!"
+            insight: "Hey man, welcome to the journey. Once you've got a week under your belt, I'll have some real talk for you. Just keep showing up, that's all that matters."
         };
     }
 
@@ -44,16 +89,16 @@ export const generateCoachInsight = async (currentWeekSummary, historicalSummari
 
         const contextData = {
             currentWeek: currentWeekSummary,
-            history: historicalSummaries.slice(0, 12) // Last 12 weeks max
+            history: historicalSummaries.slice(0, 12)
         };
 
         const message = await client.messages.create({
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 600,
+            max_tokens: 300,
             messages: [
                 {
                     role: 'user',
-                    content: `${COACH_PROMPT}\n\nData:\n${JSON.stringify(contextData, null, 2)}`
+                    content: `${COACH_INSIGHT_PROMPT}\n\nData:\n${JSON.stringify(contextData, null, 2)}`
                 }
             ]
         });
@@ -70,7 +115,123 @@ export const generateCoachInsight = async (currentWeekSummary, historicalSummari
         return {
             success: false,
             error: error.message,
-            insight: null
+            insight: "Hey man, the universe is being a little weird right now. Check back in a bit."
+        };
+    }
+};
+
+// Generate time-based greeting
+export const generateGreeting = async (timeOfDay = 'afternoon') => {
+    console.log(`[CoachAgent] Generating ${timeOfDay} greeting`);
+
+    try {
+        const client = getClient();
+
+        const prompt = GREETING_PROMPT.replace('{timeOfDay}', timeOfDay);
+
+        const message = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 100,
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ]
+        });
+
+        const greeting = message.content[0].type === 'text' ? message.content[0].text : '';
+
+        return {
+            success: true,
+            greeting: greeting.trim()
+        };
+    } catch (error) {
+        console.error('[CoachAgent] Greeting error:', error.message);
+        // Fallback greetings
+        const fallbacks = {
+            morning: "Rise and shine, buddy. Let's make today count.",
+            afternoon: "Afternoon, my friend. You're doing better than you think.",
+            evening: "Evening, brother. Take a moment to appreciate the day."
+        };
+        return {
+            success: true,
+            greeting: fallbacks[timeOfDay] || fallbacks.afternoon
+        };
+    }
+};
+
+// Generate day summary reaction
+export const generateDaySummary = async (dayData) => {
+    console.log('[CoachAgent] Generating day summary');
+
+    if (!dayData || Object.keys(dayData).length === 0) {
+        return {
+            success: true,
+            summary: "A quiet day, man. Sometimes those are the best ones. The Dude abides."
+        };
+    }
+
+    try {
+        const client = getClient();
+
+        const prompt = DAY_SUMMARY_PROMPT.replace('{dayData}', JSON.stringify(dayData, null, 2));
+
+        const message = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 150,
+            messages: [
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ]
+        });
+
+        const summary = message.content[0].type === 'text' ? message.content[0].text : '';
+
+        return {
+            success: true,
+            summary: summary.trim()
+        };
+    } catch (error) {
+        console.error('[CoachAgent] Day summary error:', error.message);
+        return {
+            success: true,
+            summary: "Alright alright alright... looks like you had a day worth remembering."
+        };
+    }
+};
+
+// Generate encouragement based on activity
+export const generateEncouragement = async (context = {}) => {
+    console.log('[CoachAgent] Generating encouragement');
+
+    try {
+        const client = getClient();
+
+        const message = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 100,
+            messages: [
+                {
+                    role: 'user',
+                    content: `${COACH_PERSONA}\n\nGenerate a single encouraging sentence for someone checking their life journal app. Context: ${JSON.stringify(context)}\n\nJust the encouragement, 1 sentence max.`
+                }
+            ]
+        });
+
+        const encouragement = message.content[0].type === 'text' ? message.content[0].text : '';
+
+        return {
+            success: true,
+            encouragement: encouragement.trim()
+        };
+    } catch (error) {
+        console.error('[CoachAgent] Encouragement error:', error.message);
+        return {
+            success: true,
+            encouragement: "You're doing better than you think. Trust me on that one."
         };
     }
 };
@@ -84,13 +245,11 @@ export const storeInsight = async (supabase, userId, insight, weekNumber) => {
         generated_at: new Date().toISOString()
     };
 
-    // Store in a simple insights table or append to therapy_summaries
     const { error } = await supabase
         .from('coach_insights')
         .upsert(record, { onConflict: 'user_id,week_number' });
 
     if (error) {
-        // Table might not exist, log but don't fail
         console.warn('[CoachAgent] Could not store insight:', error.message);
     }
 
@@ -117,17 +276,16 @@ export const getHistoricalSummaries = async (supabase, userId, weeksBack = 12) =
     return data || [];
 };
 
-// Generate quick reflection prompts
+// Generate quick reflection prompts (with persona)
 export const generateReflectionPrompts = (summary) => {
     const prompts = [
-        "What moment from this week are you most grateful for?",
-        "If you could do one thing differently next week, what would it be?",
-        "What gave you energy this week? What drained it?",
-        "Who did you connect with this week that made you feel good?",
-        "What's one small win you want to acknowledge?"
+        "What moment from this week made you smile, man?",
+        "If you could do one thing differently, what would it be? No judgment.",
+        "What gave you energy? What took it away?",
+        "Who made your week a little brighter?",
+        "What's one small win you want to celebrate?"
     ];
 
-    // Shuffle and return 3
     return prompts
         .sort(() => Math.random() - 0.5)
         .slice(0, 3);

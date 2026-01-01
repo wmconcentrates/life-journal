@@ -13,7 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { VOID } from '../theme/colors';
 import Orb from '../components/Orb';
-import { insightsAPI } from '../services/api';
+import { insightsAPI, coachAPI } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
 const CELL_SIZE = (width - 48) / 7;
@@ -28,14 +28,6 @@ const ACTIVITY_BUTTONS = [
   { id: 'activities', icon: '⚡', label: 'Things I Did', color: VOID.orb.success },
 ];
 
-const COACH_DAY_SUMMARIES = [
-  "Alright alright alright... looks like you had a solid day, brother.",
-  "The Dude would be proud. You kept it real today.",
-  "That's what I'm talking about. You showed up and made it count.",
-  "Nice and easy does it. Today was a good one.",
-  "You're living life, man. That's beautiful.",
-];
-
 const TimelineScreen = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -44,6 +36,8 @@ const TimelineScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const [daySummary, setDaySummary] = useState("Alright alright alright... let me check out your day.");
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   const fadeIn = useRef(new Animated.Value(0)).current;
   const modalAnim = useRef(new Animated.Value(0)).current;
@@ -119,10 +113,12 @@ const TimelineScreen = () => {
     setCurrentMonth(newMonth);
   };
 
-  const handleDayPress = (day) => {
+  const handleDayPress = async (day) => {
     if (!day) return;
     setSelectedDay(day);
     setSelectedActivity(null);
+    setDaySummary("Alright alright alright... let me check out your day.");
+    setLoadingSummary(true);
     setModalVisible(true);
     Animated.spring(modalAnim, {
       toValue: 1,
@@ -130,6 +126,27 @@ const TimelineScreen = () => {
       tension: 40,
       useNativeDriver: true,
     }).start();
+
+    // Fetch AI-generated day summary
+    try {
+      const dateKey = day.toISOString().split('T')[0];
+      const dayData = events[dateKey];
+      const result = await coachAPI.getDaySummary({
+        date: dateKey,
+        places: dayData?.places || [],
+        spending: dayData?.spending || 0,
+        photos: dayData?.photos || 0,
+        activities: dayData?.activities || 0,
+      });
+      if (result.success && result.summary) {
+        setDaySummary(result.summary);
+      }
+    } catch (error) {
+      console.error('Day summary error:', error);
+      // Keep the default summary on error
+    } finally {
+      setLoadingSummary(false);
+    }
   };
 
   const closeModal = () => {
@@ -321,11 +338,15 @@ const TimelineScreen = () => {
 
                 {/* Coach Summary */}
                 <View style={styles.coachSummary}>
-                  <Orb size={50} color={VOID.orb.primary} intensity={0.5}>
-                    <Text style={{ fontSize: 22 }}>🧘</Text>
+                  <Orb size={50} color={VOID.orb.primary} intensity={0.5} pulse={loadingSummary}>
+                    {loadingSummary ? (
+                      <ActivityIndicator color={VOID.text.primary} size="small" />
+                    ) : (
+                      <Text style={{ fontSize: 22 }}>🧘</Text>
+                    )}
                   </Orb>
                   <Text style={styles.coachText}>
-                    "{COACH_DAY_SUMMARIES[Math.floor(Math.random() * COACH_DAY_SUMMARIES.length)]}"
+                    "{daySummary}"
                   </Text>
                 </View>
 
