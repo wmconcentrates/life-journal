@@ -7,6 +7,7 @@ import {
   Animated,
   Dimensions,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { VOID } from '../theme/colors';
@@ -22,7 +23,7 @@ const getTimeOfDay = () => {
   return 'evening';
 };
 
-const CoachScreen = () => {
+const CoachScreen = ({ navigation }) => {
   const [insights, setInsights] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState("Hey there, friend.\nGood to see you.");
@@ -44,6 +45,17 @@ const CoachScreen = () => {
     try {
       setLoadingCoach(true);
       const timeOfDay = getTimeOfDay();
+
+      // Try contextual greeting first (requires auth), fall back to simple greeting
+      try {
+        const contextualResult = await coachAPI.getContextualGreeting(timeOfDay);
+        if (contextualResult.success && contextualResult.greeting) {
+          setGreeting(contextualResult.greeting);
+          return;
+        }
+      } catch {
+        // Contextual greeting requires auth, fall back to simple
+      }
 
       const greetingResult = await coachAPI.getGreeting(timeOfDay);
       if (greetingResult.success && greetingResult.greeting) {
@@ -196,6 +208,18 @@ const CoachScreen = () => {
           </Orb>
 
           <Text style={styles.greeting}>{greeting}</Text>
+
+          {/* Chat Button */}
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => navigation.navigate('Chat')}
+            activeOpacity={0.8}
+          >
+            <Orb size={60} color={VOID.orb.secondary} intensity={0.7}>
+              <Text style={{ fontSize: 24 }}>💬</Text>
+            </Orb>
+            <Text style={styles.chatButtonText}>Chat with Coach</Text>
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Stats Orbs */}
@@ -278,6 +302,23 @@ const styles = StyleSheet.create({
     marginTop: 32,
     lineHeight: 38,
     letterSpacing: -0.5,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 32,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: VOID.elevated,
+    borderRadius: 40,
+    borderWidth: 1,
+    borderColor: VOID.border.subtle,
+    gap: 12,
+  },
+  chatButtonText: {
+    color: VOID.text.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   statsSection: {
     paddingHorizontal: 24,

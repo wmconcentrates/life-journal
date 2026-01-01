@@ -90,6 +90,11 @@ export const coachAPI = {
     return response.data;
   },
 
+  getContextualGreeting: async (timeOfDay = 'afternoon') => {
+    const response = await api.get(`/api/coach/greeting/contextual?timeOfDay=${timeOfDay}`);
+    return response.data;
+  },
+
   getDaySummary: async (dayData) => {
     const response = await api.post('/api/coach/day-summary', { dayData });
     return response.data;
@@ -102,6 +107,76 @@ export const coachAPI = {
 
   getInsight: async (currentWeekSummary, historicalSummaries = []) => {
     const response = await api.post('/api/coach/insight', { currentWeekSummary, historicalSummaries });
+    return response.data;
+  },
+};
+
+// Chat API - Conversational chat with coach
+export const chatAPI = {
+  sendMessage: async (message, sessionId = null) => {
+    const response = await api.post('/api/coach/chat', { message, sessionId });
+    return response.data;
+  },
+
+  getHistory: async (sessionId = null) => {
+    const url = sessionId
+      ? `/api/coach/chat/history?sessionId=${sessionId}`
+      : '/api/coach/chat/history';
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  endSession: async (sessionId) => {
+    const response = await api.post('/api/coach/chat/end', { sessionId });
+    return response.data;
+  },
+};
+
+// Context API - What coach remembers about user
+export const contextAPI = {
+  get: async () => {
+    const response = await api.get('/api/coach/context');
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await api.delete(`/api/coach/context/${id}`);
+    return response.data;
+  },
+};
+
+// Calendar API - Manual events and Google sync
+export const calendarAPI = {
+  getEvents: async (start = null, end = null) => {
+    let url = '/api/calendar/events';
+    const params = [];
+    if (start) params.push(`start=${start}`);
+    if (end) params.push(`end=${end}`);
+    if (params.length) url += `?${params.join('&')}`;
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  addEvent: async (title, date, time = null, type = 'reminder') => {
+    const response = await api.post('/api/calendar/events', { title, date, time, type });
+    return response.data;
+  },
+
+  deleteEvent: async (id) => {
+    const response = await api.delete(`/api/calendar/events/${id}`);
+    return response.data;
+  },
+};
+
+// Settings API - User preferences
+export const settingsAPI = {
+  get: async () => {
+    const response = await api.get('/api/user/settings');
+    return response.data;
+  },
+
+  update: async (settings) => {
+    const response = await api.put('/api/user/settings', settings);
     return response.data;
   },
 };

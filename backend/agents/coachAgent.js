@@ -276,6 +276,357 @@ export const getHistoricalSummaries = async (supabase, userId, weeksBack = 12) =
     return data || [];
 };
 
+// Generate context-aware greeting based on calendar events and user context
+export const generateContextAwareGreeting = async (timeOfDay = 'afternoon', calendarEvents = [], userContext = []) => {
+    console.log(`[CoachAgent] Generating context-aware ${timeOfDay} greeting`);
+
+    try {
+        const client = getClient();
+
+        const contextPrompt = `${COACH_PERSONA}
+
+Generate a personalized greeting. Time of day: ${timeOfDay}
+
+Today's calendar events:
+${calendarEvents.length > 0 ? calendarEvents.map(e => `- ${e.type}: ${e.title}${e.time ? ` at ${e.time}` : ''}`).join('\n') : 'No events today'}
+
+Things you remember about this person:
+${userContext.length > 0 ? userContext.map(c => `- ${c.type}: ${c.detail}`).join('\n') : 'Nothing specific yet'}
+
+Create a greeting that:
+1. References ONE specific thing if available (meeting, birthday, health goal, etc.)
+2. Is 1-2 sentences max
+3. Feels natural and warm, not forced
+4. Stays in character as the laid-back coach
+
+If no events or context, just give a warm time-based greeting.
+
+Just the greeting, nothing else:`;
+
+        const message = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 150,
+            messages: [
+                {
+                    role: 'user',
+                    content: contextPrompt
+                }
+            ]
+        });
+
+        const greeting = message.content[0].type === 'text' ? message.content[0].text : '';
+
+        return {
+            success: true,
+            greeting: greeting.trim()
+        };
+    } catch (error) {
+        console.error('[CoachAgent] Context greeting error:', error.message);
+        // Fallback greetings
+        const fallbacks = {
+            morning: "Rise and shine, buddy. Let's make today count.",
+            afternoon: "Afternoon, my friend. You're doing better than you think.",
+            evening: "Evening, brother. Take a moment to appreciate the day."
+        };
+        return {
+            success: true,
+            greeting: fallbacks[timeOfDay] || fallbacks.afternoon
+        };
+    }
+};
+
+// Generate chat response with conversation history and user context
+export const generateChatResponse = async (userMessage, conversationHistory = [], userContext = [], calendarEvents = []) => {
+    console.log(`[CoachAgent] Generating chat response (${conversationHistory.length} messages in history)`);
+
+    const userMessageCount = conversationHistory.filter(m => m.role === 'user').length + 1;
+    let usageLevel = 'normal';
+    let usagePrompt = '';
+
+    // Anti-overuse logic based on question count
+    if (userMessageCount >= 20) {
+        usageLevel = 'auto_end';
+    } else if (userMessageCount >= 15) {
+        usageLevel = 'strong';
+        usagePrompt = "\n\nIMPORTANT: This is their 15+ message. Firmly but kindly suggest ending the chat. Say something like 'Alright man, I love our chats but... go live a little. Come back later and tell me about it.'";
+    } else if (userMessageCount >= 10) {
+        usageLevel = 'moderate';
+        usagePrompt = "\n\nNote: They've sent 10+ messages. Gently suggest they might want to step away soon. Something like 'Hey brother, we've been at this a while. Sometimes the best answers come when you step away.'";
+    } else if (userMessageCount >= 5) {
+        usageLevel = 'soft';
+        usagePrompt = "\n\nNote: After your response, you can subtly hint that reflection time is good too. Like 'Good talk, man. Maybe sit with that for a bit.'";
+    }
+
+    // Auto-end at 20 messages
+    if (usageLevel === 'auto_end') {
+        return {
+            success: true,
+            response: "That's a wrap for now, brother. We've had a good talk. Go be present out there - the Dude abides. Come back tomorrow and tell me how it went.",
+            messageCount: userMessageCount,
+            usageLevel: 'auto_end',
+            autoEnd: true
+        };
+    }
+
+    try {
+        const client = getClient();
+
+        // Format conversation history
+        const historyText = conversationHistory.map(m =>
+            `${m.role === 'user' ? 'Them' : 'You'}: ${m.content}`
+        ).join('\n');
+
+        const chatPrompt = `${COACH_PERSONA}
+
+You're having a conversation with someone who trusts you.
+
+Things you remember about them:
+${userContext.length > 0 ? userContext.map(c => `- ${c.type}: ${c.detail}`).join('\n') : 'Nothing specific yet - this is a new relationship'}
+
+Their recent calendar:
+${calendarEvents.length > 0 ? calendarEvents.slice(0, 5).map(e => `- ${e.title}`).join('\n') : 'No events'}
+
+Conversation so far:
+${historyText || '(This is the start of the conversation)'}
+
+RULES:
+1. Keep responses under 3 sentences unless they're opening up emotionally
+2. Remember things they tell you and reference them naturally
+3. Never give medical, legal, or financial advice - if they ask, say "That's above my pay grade, brother. Maybe talk to someone qualified."
+4. If they seem in crisis, encourage them to reach out to a professional
+5. Be genuine, not preachy${usagePrompt}
+
+Their message: "${userMessage}"
+
+Your response (just the response, nothing else):`;
+
+        const message = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 300,
+            messages: [
+                {
+                    role: 'user',
+                    content: chatPrompt
+                }
+            ]
+        });
+
+        const response = message.content[0].type === 'text' ? message.content[0].text : '';
+
+        return {
+            success: true,
+            response: response.trim(),
+            messageCount: userMessageCount,
+            usageLevel
+        };
+    } catch (error) {
+        console.error('[CoachAgent] Chat response error:', error.message);
+        return {
+            success: false,
+            error: error.message,
+            response: "Hey man, my brain's a little fuzzy right now. Try me again in a sec.",
+            messageCount: userMessageCount,
+            usageLevel
+        };
+    }
+};
+
+// Extract user context from a message (health, relationships, goals, etc.)
+export const extractUserContext = async (message, existingContext = []) => {
+    console.log('[CoachAgent] Extracting user context from message');
+
+    try {
+        const client = getClient();
+
+        const extractPrompt = `Analyze this message and extract any personal context worth remembering:
+
+Message: "${message}"
+
+Existing context about this person:
+${existingContext.length > 0 ? existingContext.map(c => `- ${c.type}: ${c.detail}`).join('\n') : 'None yet'}
+
+Extract NEW information about:
+- health: Physical or mental health mentions (e.g., "back pain", "feeling anxious")
+- relationship: Family, friends, romantic (e.g., "sister getting married", "fight with partner")
+- goal: Work or personal goals (e.g., "training for marathon", "starting new job")
+- work: Job/career mentions (e.g., "big presentation tomorrow", "got promoted")
+- preference: Likes/dislikes (e.g., "love hiking", "hate mornings")
+
+Return as JSON only (no other text):
+{
+  "contexts": [
+    {"type": "health", "detail": "mentioned back pain"},
+    {"type": "relationship", "detail": "sister getting married in June"}
+  ]
+}
+
+Only extract meaningful, SPECIFIC information. Return {"contexts": []} if nothing notable or just casual chat.`;
+
+        const response = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 200,
+            messages: [
+                {
+                    role: 'user',
+                    content: extractPrompt
+                }
+            ]
+        });
+
+        const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+
+        // Parse JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return {
+                success: true,
+                contexts: parsed.contexts || []
+            };
+        }
+
+        return { success: true, contexts: [] };
+    } catch (error) {
+        console.error('[CoachAgent] Context extraction error:', error.message);
+        return { success: true, contexts: [] };
+    }
+};
+
+// Generate conversation summary when session ends
+export const generateConversationSummary = async (conversationHistory) => {
+    console.log(`[CoachAgent] Generating conversation summary (${conversationHistory.length} messages)`);
+
+    if (!conversationHistory || conversationHistory.length < 2) {
+        return {
+            success: true,
+            summary: "Brief check-in, nothing major discussed.",
+            topics: [],
+            actionItems: [],
+            mood: "neutral"
+        };
+    }
+
+    try {
+        const client = getClient();
+
+        const historyText = conversationHistory.map(m =>
+            `${m.role === 'user' ? 'User' : 'Coach'}: ${m.content}`
+        ).join('\n');
+
+        const summaryPrompt = `${COACH_PERSONA}
+
+You just finished a conversation. Create a brief summary for their journal.
+
+Conversation:
+${historyText}
+
+Generate a summary in JSON format (no other text):
+{
+  "summary": "2-3 sentence summary of what you talked about, written in first person as the coach",
+  "topics": ["array", "of", "main", "topics"],
+  "actionItems": ["things they mentioned wanting to do"],
+  "mood": "one word: reflective, stressed, hopeful, anxious, happy, neutral, etc."
+}`;
+
+        const response = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 300,
+            messages: [
+                {
+                    role: 'user',
+                    content: summaryPrompt
+                }
+            ]
+        });
+
+        const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+
+        // Parse JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return {
+                success: true,
+                summary: parsed.summary || "Had a good chat.",
+                topics: parsed.topics || [],
+                actionItems: parsed.actionItems || [],
+                mood: parsed.mood || "neutral"
+            };
+        }
+
+        return {
+            success: true,
+            summary: "Had a conversation with the coach.",
+            topics: [],
+            actionItems: [],
+            mood: "neutral"
+        };
+    } catch (error) {
+        console.error('[CoachAgent] Summary generation error:', error.message);
+        return {
+            success: true,
+            summary: "Had a conversation with the coach.",
+            topics: [],
+            actionItems: [],
+            mood: "neutral"
+        };
+    }
+};
+
+// Generate proactive check-in message
+export const generateCheckIn = async (userContext = [], lastInteraction = null) => {
+    console.log('[CoachAgent] Generating proactive check-in');
+
+    try {
+        const client = getClient();
+
+        const daysSinceLastChat = lastInteraction
+            ? Math.floor((Date.now() - new Date(lastInteraction).getTime()) / (1000 * 60 * 60 * 24))
+            : null;
+
+        const checkInPrompt = `${COACH_PERSONA}
+
+Generate a short check-in message (push notification style, 1-2 sentences max).
+
+Things you know about them:
+${userContext.length > 0 ? userContext.map(c => `- ${c.type}: ${c.detail}`).join('\n') : 'Not much yet'}
+
+${daysSinceLastChat !== null ? `Days since last chat: ${daysSinceLastChat}` : 'First check-in'}
+
+Make it:
+- Personal if you have context to reference
+- Encouraging them to be present/active (not just chat with you)
+- Short enough for a notification
+- In character
+
+Just the message, nothing else:`;
+
+        const response = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 100,
+            messages: [
+                {
+                    role: 'user',
+                    content: checkInPrompt
+                }
+            ]
+        });
+
+        const checkIn = response.content[0].type === 'text' ? response.content[0].text : '';
+
+        return {
+            success: true,
+            message: checkIn.trim()
+        };
+    } catch (error) {
+        console.error('[CoachAgent] Check-in error:', error.message);
+        return {
+            success: true,
+            message: "Hey brother, hope you're having a good one. Get out there and live a little."
+        };
+    }
+};
+
 // Generate quick reflection prompts (with persona)
 export const generateReflectionPrompts = (summary) => {
     const prompts = [

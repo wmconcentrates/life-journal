@@ -13,7 +13,18 @@ import { googleMapsAgent, getLocationStats } from './agents/googleMapsAgent.js';
 import { amazonAgent, getSpendingStats } from './agents/amazonAgent.js';
 import { syncUserData, syncUserDataLocal, getWeekDateRange } from './sync/weeklySync.js';
 import { generateWeeklySummary, getWeekNumber } from './agents/summaryAgent.js';
-import { generateCoachInsight, generateReflectionPrompts, generateGreeting, generateDaySummary, generateEncouragement } from './agents/coachAgent.js';
+import {
+    generateCoachInsight,
+    generateReflectionPrompts,
+    generateGreeting,
+    generateDaySummary,
+    generateEncouragement,
+    generateContextAwareGreeting,
+    generateChatResponse,
+    extractUserContext,
+    generateConversationSummary,
+    generateCheckIn
+} from './agents/coachAgent.js';
 import { encryptData, decryptData } from './utils/encryption.js';
 
 dotenv.config();
@@ -436,6 +447,561 @@ app.post('/api/coach/insight', async (req, res) => {
         const { currentWeekSummary, historicalSummaries } = req.body;
         const result = await generateCoachInsight(currentWeekSummary, historicalSummaries || []);
         res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get context-aware greeting
+app.get('/api/coach/greeting/contextual', authenticateToken, async (req, res) => {
+    try {
+        const { timeOfDay } = req.query;
+        const masterKey = getMasterKey();
+
+        // Fetch today's calendar events
+        const today = new Date().toISOString().split('T')[0];
+        const { data: calendarData } = await supabase
+            .from('calendar_events')
+            .select('*')
+            .eq('user_id', req.userId)
+            .eq('event_date', today);
+
+        const calendarEvents = (calendarData || []).map(event => {
+            try {
+                const decrypted = decryptData(JSON.parse(event.title_encrypted), masterKey);
+                return {
+                    type: event.event_type,
+                    title: decrypted,
+                    time: event.event_time
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        // Fetch user context
+        const { data: contextData } = await supabase
+            .from('coach_context')
+            .select('*')
+            .eq('user_id', req.userId);
+
+        const userContext = (contextData || []).map(ctx => {
+            try {
+                const decrypted = decryptData(JSON.parse(ctx.context_encrypted), masterKey);
+                return {
+                    type: ctx.context_type,
+                    detail: decrypted
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        const result = await generateContextAwareGreeting(timeOfDay || 'afternoon', calendarEvents, userContext);
+        res.json(result);
+    } catch (error) {
+        console.error('Contextual greeting error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// CHAT ENDPOINTS
+// ============================================
+
+// Send chat message and get response
+app.post('/api/coach/chat', authenticateToken, async (req, res) => {
+    try {
+        const { message, sessionId } = req.body;
+        const masterKey = getMasterKey();
+        const currentSessionId = sessionId || crypto.randomUUID();
+
+        if (!message) {
+            return res.status(400).json({
+                success: false,
+                error: 'Message required'
+            });
+        }
+
+        // Fetch conversation history (last 7 days)
+        const { data: historyData } = await supabase
+            .from('coach_conversations')
+            .select('*')
+            .eq('user_id', req.userId)
+            .eq('session_id', currentSessionId)
+            .order('created_at', { ascending: true });
+
+        const conversationHistory = (historyData || []).map(msg => {
+            try {
+                const decrypted = decryptData(JSON.parse(msg.message_encrypted), masterKey);
+                return {
+                    role: msg.role,
+                    content: decrypted,
+                    timestamp: msg.created_at
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        // Fetch user context
+        const { data: contextData } = await supabase
+            .from('coach_context')
+            .select('*')
+            .eq('user_id', req.userId);
+
+        const userContext = (contextData || []).map(ctx => {
+            try {
+                const decrypted = decryptData(JSON.parse(ctx.context_encrypted), masterKey);
+                return {
+                    type: ctx.context_type,
+                    detail: decrypted
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        // Fetch recent calendar events
+        const today = new Date().toISOString().split('T')[0];
+        const { data: calendarData } = await supabase
+            .from('calendar_events')
+            .select('*')
+            .eq('user_id', req.userId)
+            .gte('event_date', today)
+            .limit(10);
+
+        const calendarEvents = (calendarData || []).map(event => {
+            try {
+                const decrypted = decryptData(JSON.parse(event.title_encrypted), masterKey);
+                return { title: decrypted, date: event.event_date };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        // Generate response
+        const result = await generateChatResponse(message, conversationHistory, userContext, calendarEvents);
+
+        // Store user message
+        const encryptedUserMsg = encryptData(message, masterKey);
+        await supabase.from('coach_conversations').insert({
+            user_id: req.userId,
+            session_id: currentSessionId,
+            message_encrypted: JSON.stringify(encryptedUserMsg),
+            role: 'user'
+        });
+
+        // Store coach response (if not auto-end)
+        if (result.response) {
+            const encryptedCoachMsg = encryptData(result.response, masterKey);
+            await supabase.from('coach_conversations').insert({
+                user_id: req.userId,
+                session_id: currentSessionId,
+                message_encrypted: JSON.stringify(encryptedCoachMsg),
+                role: 'coach'
+            });
+        }
+
+        // Extract and store any new context from user message
+        const contextResult = await extractUserContext(message, userContext);
+        if (contextResult.contexts && contextResult.contexts.length > 0) {
+            for (const ctx of contextResult.contexts) {
+                const encryptedContext = encryptData(ctx.detail, masterKey);
+                await supabase.from('coach_context').insert({
+                    user_id: req.userId,
+                    context_type: ctx.type,
+                    context_encrypted: JSON.stringify(encryptedContext),
+                    source: 'chat'
+                });
+            }
+        }
+
+        // If auto-end, generate and store summary
+        if (result.autoEnd) {
+            const allHistory = [...conversationHistory, { role: 'user', content: message }];
+            const summaryResult = await generateConversationSummary(allHistory);
+
+            // Store summary in timeline_events
+            const encryptedSummary = encryptData(summaryResult, masterKey);
+            await supabase.from('timeline_events').insert({
+                user_id: req.userId,
+                event_date: today,
+                event_type: 'conversation_summary',
+                event_data_encrypted: JSON.stringify(encryptedSummary),
+                source_integration: 'coach_chat'
+            });
+
+            result.summary = summaryResult;
+        }
+
+        res.json({
+            ...result,
+            sessionId: currentSessionId
+        });
+    } catch (error) {
+        console.error('Chat error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get chat history
+app.get('/api/coach/chat/history', authenticateToken, async (req, res) => {
+    try {
+        const { sessionId } = req.query;
+        const masterKey = getMasterKey();
+
+        let query = supabase
+            .from('coach_conversations')
+            .select('*')
+            .eq('user_id', req.userId)
+            .order('created_at', { ascending: true });
+
+        if (sessionId) {
+            query = query.eq('session_id', sessionId);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const messages = (data || []).map(msg => {
+            try {
+                const decrypted = decryptData(JSON.parse(msg.message_encrypted), masterKey);
+                return {
+                    id: msg.id,
+                    sessionId: msg.session_id,
+                    role: msg.role,
+                    content: decrypted,
+                    timestamp: msg.created_at
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        res.json({
+            success: true,
+            messages,
+            count: messages.length
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// End chat session and generate summary
+app.post('/api/coach/chat/end', authenticateToken, async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        const masterKey = getMasterKey();
+        const today = new Date().toISOString().split('T')[0];
+
+        if (!sessionId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Session ID required'
+            });
+        }
+
+        // Fetch conversation history
+        const { data: historyData } = await supabase
+            .from('coach_conversations')
+            .select('*')
+            .eq('user_id', req.userId)
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: true });
+
+        const conversationHistory = (historyData || []).map(msg => {
+            try {
+                const decrypted = decryptData(JSON.parse(msg.message_encrypted), masterKey);
+                return {
+                    role: msg.role,
+                    content: decrypted
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        // Generate summary
+        const summaryResult = await generateConversationSummary(conversationHistory);
+
+        // Store summary in timeline_events
+        const encryptedSummary = encryptData(summaryResult, masterKey);
+        await supabase.from('timeline_events').insert({
+            user_id: req.userId,
+            event_date: today,
+            event_type: 'conversation_summary',
+            event_data_encrypted: JSON.stringify(encryptedSummary),
+            source_integration: 'coach_chat'
+        });
+
+        res.json({
+            success: true,
+            summary: summaryResult
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// CONTEXT ENDPOINTS
+// ============================================
+
+// Get user context (what coach remembers)
+app.get('/api/coach/context', authenticateToken, async (req, res) => {
+    try {
+        const masterKey = getMasterKey();
+
+        const { data, error } = await supabase
+            .from('coach_context')
+            .select('*')
+            .eq('user_id', req.userId)
+            .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+
+        const contexts = (data || []).map(ctx => {
+            try {
+                const decrypted = decryptData(JSON.parse(ctx.context_encrypted), masterKey);
+                return {
+                    id: ctx.id,
+                    type: ctx.context_type,
+                    detail: decrypted,
+                    source: ctx.source,
+                    updatedAt: ctx.updated_at
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        res.json({
+            success: true,
+            contexts,
+            count: contexts.length
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Delete context item
+app.delete('/api/coach/context/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const { error } = await supabase
+            .from('coach_context')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', req.userId);
+
+        if (error) throw error;
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// CALENDAR ENDPOINTS
+// ============================================
+
+// Get calendar events
+app.get('/api/calendar/events', authenticateToken, async (req, res) => {
+    try {
+        const { start, end } = req.query;
+        const masterKey = getMasterKey();
+
+        let query = supabase
+            .from('calendar_events')
+            .select('*')
+            .eq('user_id', req.userId)
+            .order('event_date', { ascending: true });
+
+        if (start) query = query.gte('event_date', start);
+        if (end) query = query.lte('event_date', end);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const events = (data || []).map(event => {
+            try {
+                const decrypted = decryptData(JSON.parse(event.title_encrypted), masterKey);
+                return {
+                    id: event.id,
+                    title: decrypted,
+                    date: event.event_date,
+                    time: event.event_time,
+                    type: event.event_type,
+                    source: event.source
+                };
+            } catch {
+                return null;
+            }
+        }).filter(Boolean);
+
+        res.json({
+            success: true,
+            events,
+            count: events.length
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Add calendar event
+app.post('/api/calendar/events', authenticateToken, async (req, res) => {
+    try {
+        const { title, date, time, type } = req.body;
+        const masterKey = getMasterKey();
+
+        if (!title || !date) {
+            return res.status(400).json({
+                success: false,
+                error: 'Title and date required'
+            });
+        }
+
+        const encryptedTitle = encryptData(title, masterKey);
+
+        const { data, error } = await supabase
+            .from('calendar_events')
+            .insert({
+                user_id: req.userId,
+                title_encrypted: JSON.stringify(encryptedTitle),
+                event_date: date,
+                event_time: time || null,
+                event_type: type || 'reminder',
+                source: 'manual'
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            event: {
+                id: data.id,
+                title,
+                date,
+                time,
+                type: type || 'reminder'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Delete calendar event
+app.delete('/api/calendar/events/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const { error } = await supabase
+            .from('calendar_events')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', req.userId);
+
+        if (error) throw error;
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// USER SETTINGS ENDPOINTS
+// ============================================
+
+// Get user settings
+app.get('/api/user/settings', authenticateToken, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('user_settings')
+            .select('*')
+            .eq('user_id', req.userId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+
+        res.json({
+            success: true,
+            settings: data || {
+                proactive_notifications: false,
+                notification_frequency: 'daily',
+                google_calendar_connected: false
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Update user settings
+app.put('/api/user/settings', authenticateToken, async (req, res) => {
+    try {
+        const { proactive_notifications, notification_frequency, google_calendar_connected } = req.body;
+
+        const { data, error } = await supabase
+            .from('user_settings')
+            .upsert({
+                user_id: req.userId,
+                proactive_notifications: proactive_notifications ?? false,
+                notification_frequency: notification_frequency ?? 'daily',
+                google_calendar_connected: google_calendar_connected ?? false,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            settings: data
+        });
     } catch (error) {
         res.status(500).json({
             success: false,

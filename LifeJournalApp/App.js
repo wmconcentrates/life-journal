@@ -3,8 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import CoachScreen from './src/screens/CoachScreen';
+import ChatScreen from './src/screens/ChatScreen';
 import TimelineScreen from './src/screens/TimelineScreen';
 import WeeklySummaryScreen from './src/screens/WeeklySummaryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
@@ -24,6 +26,15 @@ const VOID = {
 };
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+// Coach tab with nested stack for chat navigation
+const CoachStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="CoachHome" component={CoachScreen} />
+    <Stack.Screen name="Chat" component={ChatScreen} />
+  </Stack.Navigator>
+);
 
 // Animated orb-style tab icon
 const TabIcon = ({ icon, focused, color }) => {
@@ -120,7 +131,7 @@ const App = () => {
       >
         <Tab.Screen
           name="Coach"
-          component={CoachScreen}
+          component={CoachStack}
           options={{
             tabBarIcon: ({ focused }) => (
               <TabIcon icon="🧘" focused={focused} color={VOID.primary} />
