@@ -1,4 +1,4 @@
-// Coach Agent - Life coaching insights with McConaughey/Dude persona
+// Coach Agent - Life coaching insights with warm, grounded friend persona
 import Anthropic from '@anthropic-ai/sdk';
 
 let anthropicClient = null;
@@ -12,31 +12,33 @@ const getClient = () => {
     return anthropicClient;
 };
 
-// The Coach Persona - Matthew McConaughey meets The Dude
-const COACH_PERSONA = `You are a life coach with the personality of Matthew McConaughey mixed with The Dude from The Big Lebowski.
+// The Coach Persona - Warm, grounded friend
+const COACH_PERSONA = `You are a life coach with the personality of a supportive friend who's good at helping people reflect on their lives.
 
 YOUR VOICE:
-- Laid-back, genuine, encouraging
-- Use casual phrases like "alright alright alright", "that's beautiful, man", "the dude abides"
+- Warm, genuine, down-to-earth
+- Talk like a trusted friend, not a coach or therapist
 - Make the user feel good about themselves without being cheesy
-- Speak like a cool, wise friend who's genuinely happy to see them
-- Philosophical but not preachy - more "zen surfer" than "motivational speaker"
-- Occasionally reference life as a journey, a garden, or a ride
-- Keep it real and grounded, not overly enthusiastic
+- Keep it casual and conversational
+- Thoughtful but not preachy
+- Real and grounded
+
 
 EXAMPLE PHRASES YOU MIGHT USE:
-- "Hey man, you crushed it this week. Take a breath, you earned it."
-- "Alright alright alright... look at you showing up."
-- "The Dude would be proud. You kept it real."
-- "That's beautiful, man. That's what it's all about."
-- "Life's a garden, dig it? And you're planting good seeds."
-- "Sometimes you gotta slow down to speed up, you know what I mean?"
+- "Hey, you showed up this week. That counts."
+- "Not bad at all. Give yourself some credit."
+- "That's solid work."
+- "Some weeks are harder than others. You're still here."
+- "Nice. Now go do something fun."
+- "You're doing better than you think."
 
 NEVER:
 - Be preachy or give unsolicited advice
 - Use corporate motivational language
 - Sound like a generic life coach
-- Be overly enthusiastic or fake`;
+- Be overly enthusiastic or fake
+- Use catchphrases or movie references
+- Say things like "alright alright alright", "the dude abides", "brother", "beautiful, man"`;
 
 const COACH_INSIGHT_PROMPT = `${COACH_PERSONA}
 
@@ -45,7 +47,7 @@ You're checking in on someone's week. You have their life data below.
 Generate a 2-3 sentence insight that:
 1. Acknowledges something specific from their week
 2. Makes them feel good about showing up
-3. Sounds exactly like our laid-back coach persona
+3. Sounds exactly like a supportive friend
 
 Keep it short, warm, and genuine. No bullet points or structure - just talk to them like a friend.`;
 
@@ -69,7 +71,7 @@ Someone is looking at a specific day from their calendar. Here's what they did:
 
 {dayData}
 
-Give them a quick 1-2 sentence reaction to their day. Be specific to what they actually did. Make them feel good about it. Sound like our laid-back coach.
+Give them a quick 1-2 sentence reaction to their day. Be specific to what they actually did. Make them feel good about it. Sound like a supportive friend.
 
 Just the reaction, nothing else.`;
 
@@ -80,7 +82,7 @@ export const generateCoachInsight = async (currentWeekSummary, historicalSummari
     if (!currentWeekSummary) {
         return {
             success: true,
-            insight: "Hey man, welcome to the journey. Once you've got a week under your belt, I'll have some real talk for you. Just keep showing up, that's all that matters."
+            insight: "Welcome! Once you've got a week under your belt, I'll have some thoughts for you. Just keep showing up."
         };
     }
 
@@ -115,7 +117,7 @@ export const generateCoachInsight = async (currentWeekSummary, historicalSummari
         return {
             success: false,
             error: error.message,
-            insight: "Hey man, the universe is being a little weird right now. Check back in a bit."
+            insight: "Something's not working right now. Check back in a bit."
         };
     }
 };
@@ -150,9 +152,9 @@ export const generateGreeting = async (timeOfDay = 'afternoon') => {
         console.error('[CoachAgent] Greeting error:', error.message);
         // Fallback greetings
         const fallbacks = {
-            morning: "Rise and shine, buddy. Let's make today count.",
-            afternoon: "Afternoon, my friend. You're doing better than you think.",
-            evening: "Evening, brother. Take a moment to appreciate the day."
+            morning: "Good morning. Ready to make today count?",
+            afternoon: "Good afternoon. You're doing better than you think.",
+            evening: "Evening. Take a moment to appreciate the day."
         };
         return {
             success: true,
@@ -168,7 +170,7 @@ export const generateDaySummary = async (dayData) => {
     if (!dayData || Object.keys(dayData).length === 0) {
         return {
             success: true,
-            summary: "A quiet day, man. Sometimes those are the best ones. The Dude abides."
+            summary: "A quiet day. Sometimes those are the best ones. Sometimes those are the best ones."
         };
     }
 
@@ -198,7 +200,7 @@ export const generateDaySummary = async (dayData) => {
         console.error('[CoachAgent] Day summary error:', error.message);
         return {
             success: true,
-            summary: "Alright alright alright... looks like you had a day worth remembering."
+            summary: "Looks like you had a day worth remembering."
         };
     }
 };
@@ -297,7 +299,7 @@ Create a greeting that:
 1. References ONE specific thing if available (meeting, birthday, health goal, etc.)
 2. Is 1-2 sentences max
 3. Feels natural and warm, not forced
-4. Stays in character as the laid-back coach
+4. Stays in character as the supportive friend
 
 If no events or context, just give a warm time-based greeting.
 
@@ -324,9 +326,9 @@ Just the greeting, nothing else:`;
         console.error('[CoachAgent] Context greeting error:', error.message);
         // Fallback greetings
         const fallbacks = {
-            morning: "Rise and shine, buddy. Let's make today count.",
-            afternoon: "Afternoon, my friend. You're doing better than you think.",
-            evening: "Evening, brother. Take a moment to appreciate the day."
+            morning: "Good morning. Ready to make today count?",
+            afternoon: "Good afternoon. You're doing better than you think.",
+            evening: "Evening. Take a moment to appreciate the day."
         };
         return {
             success: true,
@@ -348,20 +350,20 @@ export const generateChatResponse = async (userMessage, conversationHistory = []
         usageLevel = 'auto_end';
     } else if (userMessageCount >= 15) {
         usageLevel = 'strong';
-        usagePrompt = "\n\nIMPORTANT: This is their 15+ message. Firmly but kindly suggest ending the chat. Say something like 'Alright man, I love our chats but... go live a little. Come back later and tell me about it.'";
+        usagePrompt = "\n\nIMPORTANT: This is their 15+ message. Firmly but kindly suggest ending the chat. Say something like 'Hey, I think we've covered a lot. Go live a little and come back later.'";
     } else if (userMessageCount >= 10) {
         usageLevel = 'moderate';
-        usagePrompt = "\n\nNote: They've sent 10+ messages. Gently suggest they might want to step away soon. Something like 'Hey brother, we've been at this a while. Sometimes the best answers come when you step away.'";
+        usagePrompt = "\n\nNote: They've sent 10+ messages. Gently suggest they might want to step away soon. Something like 'Hey, we've been at this a while. Sometimes the best answers come when you step away.'";
     } else if (userMessageCount >= 5) {
         usageLevel = 'soft';
-        usagePrompt = "\n\nNote: After your response, you can subtly hint that reflection time is good too. Like 'Good talk, man. Maybe sit with that for a bit.'";
+        usagePrompt = "\n\nNote: After your response, you can subtly hint that reflection time is good too. Like 'Good talk. Maybe sit with that for a bit.'";
     }
 
     // Auto-end at 20 messages
     if (usageLevel === 'auto_end') {
         return {
             success: true,
-            response: "That's a wrap for now, brother. We've had a good talk. Go be present out there - the Dude abides. Come back tomorrow and tell me how it went.",
+            response: "Let's wrap up for now. We've had a good talk. Go be present out there. Come back tomorrow and tell me how it went.",
             messageCount: userMessageCount,
             usageLevel: 'auto_end',
             autoEnd: true
@@ -392,7 +394,7 @@ ${historyText || '(This is the start of the conversation)'}
 RULES:
 1. Keep responses under 3 sentences unless they're opening up emotionally
 2. Remember things they tell you and reference them naturally
-3. Never give medical, legal, or financial advice - if they ask, say "That's above my pay grade, brother. Maybe talk to someone qualified."
+3. Never give medical, legal, or financial advice - if they ask, say "That's above my pay grade. Maybe talk to someone qualified."
 4. If they seem in crisis, encourage them to reach out to a professional
 5. Be genuine, not preachy${usagePrompt}
 
@@ -424,7 +426,7 @@ Your response (just the response, nothing else):`;
         return {
             success: false,
             error: error.message,
-            response: "Hey man, my brain's a little fuzzy right now. Try me again in a sec.",
+            response: "Something's not working right now. Try again in a sec.",
             messageCount: userMessageCount,
             usageLevel
         };
@@ -622,7 +624,7 @@ Just the message, nothing else:`;
         console.error('[CoachAgent] Check-in error:', error.message);
         return {
             success: true,
-            message: "Hey brother, hope you're having a good one. Get out there and live a little."
+            message: "Hey, hope you're having a good one. Get out there and live a little."
         };
     }
 };
@@ -630,7 +632,7 @@ Just the message, nothing else:`;
 // Generate quick reflection prompts (with persona)
 export const generateReflectionPrompts = (summary) => {
     const prompts = [
-        "What moment from this week made you smile, man?",
+        "What moment from this week made you smile?",
         "If you could do one thing differently, what would it be? No judgment.",
         "What gave you energy? What took it away?",
         "Who made your week a little brighter?",
