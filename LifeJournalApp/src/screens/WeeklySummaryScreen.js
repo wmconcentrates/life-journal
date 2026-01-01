@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { insightsAPI } from '../services/api';
 
@@ -15,6 +16,14 @@ const WeeklySummaryScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [insightExpanded, setInsightExpanded] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const cardAnims = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
 
   const loadInsights = useCallback(async () => {
     try {
@@ -27,8 +36,26 @@ const WeeklySummaryScreen = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      startAnimations();
     }
   }, []);
+
+  const startAnimations = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+    cardAnims.forEach((anim, i) => {
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 400,
+        delay: 200 + i * 100,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
 
   useEffect(() => {
     loadInsights();
@@ -61,8 +88,8 @@ const WeeklySummaryScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading insights...</Text>
+        <ActivityIndicator size="large" color="#8B7355" />
+        <Text style={styles.loadingText}>Gathering your week...</Text>
       </View>
     );
   }
@@ -70,26 +97,50 @@ const WeeklySummaryScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#8B7355"
+          colors={['#8B7355']}
+        />
+      }
+      showsVerticalScrollIndicator={false}
     >
       {/* Week Header */}
-      <View style={styles.weekHeader}>
+      <Animated.View style={[styles.weekHeader, { opacity: fadeAnim }]}>
         <Text style={styles.weekNumber}>Week {getWeekNumber()}</Text>
         <Text style={styles.dateRange}>{getDateRange()}</Text>
-      </View>
+      </Animated.View>
 
       {/* Stats Grid */}
-      <View style={styles.statsGrid}>
+      <Animated.View
+        style={[
+          styles.statsGrid,
+          {
+            opacity: cardAnims[0],
+            transform: [
+              {
+                translateY: cardAnims[0].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [15, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <View style={styles.statCard}>
           <Text style={styles.statIcon}>📍</Text>
           <Text style={styles.statValue}>
             {insights?.stats?.locations?.uniquePlaces || 0}
           </Text>
-          <Text style={styles.statLabel}>Locations</Text>
+          <Text style={styles.statLabel}>Places</Text>
         </View>
 
         <View style={styles.statCard}>
-          <Text style={styles.statIcon}>🛒</Text>
+          <Text style={styles.statIcon}>🛍️</Text>
           <Text style={styles.statValue}>
             {insights?.stats?.spending?.totalOrders || 0}
           </Text>
@@ -101,54 +152,101 @@ const WeeklySummaryScreen = () => {
           <Text style={styles.statValue}>
             ${insights?.stats?.spending?.totalSpent?.toFixed(0) || 0}
           </Text>
-          <Text style={styles.statLabel}>Total Spent</Text>
+          <Text style={styles.statLabel}>Spent</Text>
         </View>
 
         <View style={styles.statCard}>
           <Text style={styles.statIcon}>📷</Text>
           <Text style={styles.statValue}>12</Text>
-          <Text style={styles.statLabel}>Photos</Text>
+          <Text style={styles.statLabel}>Moments</Text>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Summary */}
       {insights?.summary && (
-        <View style={styles.card}>
+        <Animated.View
+          style={[
+            styles.card,
+            {
+              opacity: cardAnims[1],
+              transform: [
+                {
+                  translateY: cardAnims[1].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [15, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>📝</Text>
-            <Text style={styles.cardTitle}>This Week</Text>
+            <Text style={styles.cardIcon}>📖</Text>
+            <Text style={styles.cardTitle}>Your Week</Text>
           </View>
           <Text style={styles.summaryText}>{insights.summary}</Text>
-        </View>
+        </Animated.View>
       )}
 
       {/* Coach Insight */}
       {insights?.coachInsight && (
         <TouchableOpacity
-          style={[styles.card, styles.insightCard]}
+          activeOpacity={0.9}
           onPress={() => setInsightExpanded(!insightExpanded)}
-          activeOpacity={0.8}
         >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardIcon}>💡</Text>
-            <Text style={[styles.cardTitle, styles.insightTitle]}>Coach Insight</Text>
-            <Text style={styles.expandIcon}>{insightExpanded ? '▲' : '▼'}</Text>
-          </View>
-          <Text
-            style={styles.insightText}
-            numberOfLines={insightExpanded ? undefined : 4}
+          <Animated.View
+            style={[
+              styles.card,
+              styles.insightCard,
+              {
+                opacity: cardAnims[2],
+                transform: [
+                  {
+                    translateY: cardAnims[2].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [15, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
           >
-            {insights.coachInsight}
-          </Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardIcon}>💭</Text>
+              <Text style={[styles.cardTitle, styles.insightTitle]}>Coach Says...</Text>
+              <Text style={styles.expandIcon}>{insightExpanded ? '▲' : '▼'}</Text>
+            </View>
+            <Text
+              style={styles.insightText}
+              numberOfLines={insightExpanded ? undefined : 4}
+            >
+              {insights.coachInsight}
+            </Text>
+          </Animated.View>
         </TouchableOpacity>
       )}
 
       {/* Spending Breakdown */}
       {insights?.stats?.spending?.categoryBreakdown && (
-        <View style={styles.card}>
+        <Animated.View
+          style={[
+            styles.card,
+            {
+              opacity: cardAnims[3],
+              transform: [
+                {
+                  translateY: cardAnims[3].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [15, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
             <Text style={styles.cardIcon}>📊</Text>
-            <Text style={styles.cardTitle}>Spending by Category</Text>
+            <Text style={styles.cardTitle}>Where It Went</Text>
           </View>
           {Object.entries(insights.stats.spending.categoryBreakdown)
             .sort((a, b) => b[1].amount - a[1].amount)
@@ -159,15 +257,30 @@ const WeeklySummaryScreen = () => {
                 <Text style={styles.categoryAmount}>${data.amount.toFixed(2)}</Text>
               </View>
             ))}
-        </View>
+        </Animated.View>
       )}
 
       {/* Places Visited */}
       {insights?.stats?.locations?.placesVisited && (
-        <View style={styles.card}>
+        <Animated.View
+          style={[
+            styles.card,
+            {
+              opacity: cardAnims[3],
+              transform: [
+                {
+                  translateY: cardAnims[3].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [15, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
             <Text style={styles.cardIcon}>🗺️</Text>
-            <Text style={styles.cardTitle}>Places Visited</Text>
+            <Text style={styles.cardTitle}>Places You've Been</Text>
           </View>
           <View style={styles.placesContainer}>
             {insights.stats.locations.placesVisited.slice(0, 8).map((place, i) => (
@@ -176,7 +289,7 @@ const WeeklySummaryScreen = () => {
               </View>
             ))}
           </View>
-        </View>
+        </Animated.View>
       )}
 
       <View style={styles.bottomPadding} />
@@ -187,40 +300,47 @@ const WeeklySummaryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAF8F5',
+  },
+  content: {
+    paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAF8F5',
   },
   loadingText: {
-    marginTop: 12,
-    color: '#666',
+    marginTop: 16,
+    color: '#8B7355',
     fontSize: 16,
+    fontWeight: '500',
   },
   weekHeader: {
     alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: '#fff',
+    paddingVertical: 28,
+    backgroundColor: '#FFFCF8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0E6D8',
   },
   weekNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#3D3229',
+    letterSpacing: -0.5,
   },
   dateRange: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    fontSize: 15,
+    color: '#8B7355',
+    marginTop: 6,
+    fontWeight: '500',
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 8,
-    backgroundColor: '#fff',
-    marginTop: 1,
+    padding: 16,
+    backgroundColor: '#FFFCF8',
   },
   statCard: {
     width: '50%',
@@ -228,99 +348,105 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statIcon: {
-    fontSize: 28,
+    fontSize: 32,
     marginBottom: 8,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#3D3229',
   },
   statLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,
+    color: '#8B7355',
     marginTop: 4,
+    fontWeight: '500',
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
     margin: 16,
     marginBottom: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#F0E6D8',
+    shadowColor: '#8B7355',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   cardIcon: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: 22,
+    marginRight: 10,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#333',
+    color: '#3D3229',
     flex: 1,
+    letterSpacing: 0.3,
   },
   summaryText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
+    fontSize: 15,
+    color: '#6B5B4F',
+    lineHeight: 24,
   },
   insightCard: {
-    backgroundColor: '#FFF8E7',
+    backgroundColor: '#FFF9F0',
+    borderColor: '#F0E6D8',
   },
   insightTitle: {
-    color: '#FF9500',
+    color: '#D4A574',
   },
   expandIcon: {
     fontSize: 12,
-    color: '#999',
+    color: '#C4A98A',
   },
   insightText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
+    fontSize: 16,
+    color: '#5C4D3C',
+    lineHeight: 26,
   },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F5F0E8',
   },
   categoryName: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: 15,
+    color: '#3D3229',
   },
   categoryAmount: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: '#8B7355',
   },
   placesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   placeTag: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: '#F5F0E8',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   placeText: {
-    fontSize: 13,
-    color: '#1976D2',
+    fontSize: 14,
+    color: '#6B5B4F',
+    fontWeight: '500',
   },
   bottomPadding: {
-    height: 32,
+    height: 40,
   },
 });
 

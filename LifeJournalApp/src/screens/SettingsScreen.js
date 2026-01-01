@@ -7,13 +7,10 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  Switch,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
 import { healthAPI, timelineAPI } from '../services/api';
 
 const SettingsScreen = () => {
-  const { user, logout } = useAuth();
   const [serverStatus, setServerStatus] = useState(null);
   const [syncing, setSyncing] = useState(false);
 
@@ -45,33 +42,8 @@ const SettingsScreen = () => {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: logout },
-    ]);
-  };
-
   return (
-    <ScrollView style={styles.container}>
-      {/* Account Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={styles.card}>
-          <View style={styles.accountRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </Text>
-            </View>
-            <View style={styles.accountInfo}>
-              <Text style={styles.accountEmail}>{user?.email || 'User'}</Text>
-              <Text style={styles.accountStatus}>Signed in</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Connected Services */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Connected Services</Text>
@@ -85,9 +57,9 @@ const SettingsScreen = () => {
           </View>
           <View style={styles.divider} />
           <View style={styles.serviceRow}>
-            <Text style={styles.serviceIcon}>🛒</Text>
+            <Text style={styles.serviceIcon}>🛍️</Text>
             <Text style={styles.serviceName}>Amazon</Text>
-            <TouchableOpacity style={styles.connectButton}>
+            <TouchableOpacity style={styles.connectButton} activeOpacity={0.8}>
               <Text style={styles.connectButtonText}>Connect</Text>
             </TouchableOpacity>
           </View>
@@ -106,13 +78,18 @@ const SettingsScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.menuRow} onPress={handleSync} disabled={syncing}>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={handleSync}
+            disabled={syncing}
+            activeOpacity={0.7}
+          >
             <Text style={styles.menuIcon}>🔄</Text>
             <Text style={styles.menuText}>Sync Now</Text>
-            {syncing && <ActivityIndicator size="small" color="#007AFF" />}
+            {syncing && <ActivityIndicator size="small" color="#8B7355" />}
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.menuRow}>
+          <TouchableOpacity style={styles.menuRow} activeOpacity={0.7}>
             <Text style={styles.menuIcon}>🔒</Text>
             <Text style={styles.menuText}>Privacy & Data</Text>
             <Text style={styles.menuArrow}>›</Text>
@@ -129,7 +106,7 @@ const SettingsScreen = () => {
             <Text
               style={[
                 styles.statusValue,
-                { color: serverStatus?.status === 'ok' ? '#34C759' : '#FF3B30' },
+                { color: serverStatus?.status === 'ok' ? '#8B9B7A' : '#C4736C' },
               ]}
             >
               {serverStatus?.status === 'ok' ? 'Online' : 'Offline'}
@@ -164,13 +141,6 @@ const SettingsScreen = () => {
         </View>
       </View>
 
-      {/* Sign Out */}
-      <View style={styles.section}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-
       <View style={styles.bottomPadding} />
     </ScrollView>
   );
@@ -179,155 +149,126 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAF8F5',
   },
   section: {
-    marginTop: 24,
-    paddingHorizontal: 16,
+    marginTop: 28,
+    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#666',
+    color: '#8B7355',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 10,
     marginLeft: 4,
+    letterSpacing: 0.8,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     overflow: 'hidden',
-  },
-  accountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  accountInfo: {
-    flex: 1,
-  },
-  accountEmail: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  accountStatus: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    borderWidth: 1,
+    borderColor: '#F0E6D8',
+    shadowColor: '#8B7355',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   serviceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 18,
   },
   serviceIcon: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: 26,
+    marginRight: 14,
   },
   serviceName: {
     fontSize: 16,
-    color: '#333',
+    color: '#3D3229',
     flex: 1,
+    fontWeight: '500',
   },
   connectedBadge: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: '#E8F0E4',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
   },
   connectedText: {
     fontSize: 12,
-    color: '#34C759',
-    fontWeight: '500',
+    color: '#6B8B5E',
+    fontWeight: '600',
   },
   connectButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    backgroundColor: '#8B7355',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 14,
   },
   connectButtonText: {
     fontSize: 12,
-    color: '#fff',
-    fontWeight: '500',
+    color: '#FFFCF8',
+    fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
-    marginLeft: 52,
+    backgroundColor: '#F5F0E8',
+    marginLeft: 58,
   },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 18,
   },
   menuIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: 22,
+    marginRight: 14,
   },
   menuText: {
     fontSize: 16,
-    color: '#333',
+    color: '#3D3229',
     flex: 1,
+    fontWeight: '500',
   },
   menuArrow: {
-    fontSize: 20,
-    color: '#999',
+    fontSize: 22,
+    color: '#C4B8A8',
+    fontWeight: '300',
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 18,
   },
   statusLabel: {
     fontSize: 16,
-    color: '#333',
+    color: '#3D3229',
+    fontWeight: '500',
   },
   statusValue: {
     fontSize: 16,
-    color: '#666',
+    color: '#8B7355',
+    fontWeight: '500',
   },
   aboutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 18,
   },
   aboutLabel: {
     fontSize: 16,
-    color: '#333',
+    color: '#3D3229',
+    fontWeight: '500',
   },
   aboutValue: {
     fontSize: 16,
-    color: '#666',
-  },
-  logoutButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 16,
-    color: '#FF3B30',
-    fontWeight: '500',
+    color: '#8B7355',
   },
   bottomPadding: {
-    height: 32,
+    height: 50,
   },
 });
 
